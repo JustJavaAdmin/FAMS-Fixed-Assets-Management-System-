@@ -59,7 +59,7 @@ public class UserSyncService {
             try {
                 syncNow();
             } catch (Exception ex) {
-                log.warn("Initial Keycloak user sync failed: {}", ex.getMessage());
+                log.error("Initial Keycloak user sync failed for realm {}: {}", syncRealmName, ex.getMessage(), ex);
             }
         });
     }
@@ -73,22 +73,39 @@ public class UserSyncService {
     @Transactional
     public synchronized void syncNow() {
         lastAttemptedSync = LocalDateTime.now();
+        log.info("Starting Keycloak user sync for realm {} at {}", syncRealmName, lastAttemptedSync);
         try {
             List<UserRepresentation> users = keycloakAdminService.listAllUsers(syncRealmName);
+            log.info("Fetched {} user(s) from Keycloak realm {}", users.size(), syncRealmName);
+
+            if (users.isEmpty()) {
+                log.warn("No users were returned from Keycloak realm {}. Local table will not be updated.", syncRealmName);
+            }
 
             // Pull groups for each user (cheap per-user call; fine in a background job).
             Map<String, String> groupsByUser = new HashMap<>();
             for (UserRepresentation user : users) {
+                if (user.getId() == null) {
+                    log.warn("Skipping Keycloak user with no ID during sync: username={}, email={}",
+                            user.getUsername(), user.getEmail());
+                    continue;
+                }
                 try {
                     List<String> grp = keycloakAdminService.getUserGroups(syncRealmName, user.getId());
-                    groupsByUser.put(user.getId(), toDelimited(grp));
+                    String delimited = toDelimited(grp);
+                    groupsByUser.put(user.getId(), delimited);
+                    log.info("Loaded {} group(s) for Keycloak user {} ({})",
+                            grp == null ? 0 : grp.size(), user.getId(), user.getUsername());
                 } catch (Exception ex) {
+                    log.warn("Failed to load groups for Keycloak user {} ({}): {}",
+                            user.getId(), user.getUsername(), ex.getMessage(), ex);
                     groupsByUser.put(user.getId(), ",");
                 }
             }
 
             LocalDateTime now = LocalDateTime.now();
             Set<String> seenIds = new HashSet<>();
+            int savedCount = 0;
 
             for (UserRepresentation user : users) {
                 if (user.getId() == null) continue;
@@ -108,6 +125,15 @@ public class UserSyncService {
                 entity.setSyncedAt(now);
 
                 syncedUserRepository.save(entity);
+                savedCount++;
+                log.info(
+                        "Synced user into database: keycloakId={}, username={}, email={}, enabled={}, groups={}",
+                        entity.getKeycloakId(),
+                        entity.getUsername(),
+                        entity.getEmail(),
+                        entity.isEnabled(),
+                        entity.getGroups()
+                );
             }
 
             // Remove local rows for users that no longer exist in Keycloak.
@@ -117,17 +143,22 @@ public class UserSyncService {
                     .toList();
             if (!toDelete.isEmpty()) {
                 syncedUserRepository.deleteAll(toDelete);
+                log.info("Removed {} stale synced user(s) from the local table: {}",
+                        toDelete.size(),
+                        toDelete.stream().map(SyncedUser::getKeycloakId).toList());
+            } else {
+                log.info("No stale synced users needed to be removed from the local table.");
             }
 
             syncedAtLeastOnce = true;
             lastSuccessfulSync = now;
             lastError = null;
-            log.info("Keycloak user sync complete: {} user(s) synced, {} removed.",
-                    users.size(), toDelete.size());
+            log.info("Keycloak user sync complete for realm {}: {} user(s) processed, {} saved, {} removed.",
+                    syncRealmName, users.size(), savedCount, toDelete.size());
         } catch (Exception ex) {
             lastError = ex.getMessage();
-            log.warn("Keycloak user sync failed (serving last snapshot): {}",
-                    ex.getMessage());
+            log.error("Keycloak user sync failed for realm {} (serving last snapshot): {}",
+                    syncRealmName, ex.getMessage(), ex);
         }
     }
 

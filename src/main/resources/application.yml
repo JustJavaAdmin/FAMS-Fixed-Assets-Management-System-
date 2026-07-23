@@ -54,6 +54,10 @@ error:
       ProcessModelIdUnique: PROCESS_MODEL_ID_UNIQUE
       ProcessProcessNameUnique: PROCESS_PROCESS_NAME_UNIQUE
       ValidFileType: VALID_FILE_TYPE
+logging:
+  level:
+    com.example.fams.aau.keycloak: INFO
+    com.example.fams.aau.keycloak.UserSyncService: INFO
 server:
   tomcat:
     max-part-count: '100'
