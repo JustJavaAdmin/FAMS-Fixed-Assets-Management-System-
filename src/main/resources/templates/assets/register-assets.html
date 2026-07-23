@@ -111,7 +111,7 @@
         }
         .register-asset-page .btn-outline:hover { background-color: #f3f4f6 !important; }
         .register-asset-page .btn-loader {
-            display: inline-block;
+            display: none;
             width: 18px;
             height: 18px;
             border: 2.5px solid rgba(255, 255, 255, 0.35);
@@ -120,10 +120,21 @@
             animation: spin 0.7s linear infinite;
             flex-shrink: 0;
         }
+        .register-asset-page .btn-loading .btn-loader {
+            display: inline-block;
+        }
         .register-asset-page .btn-loading { pointer-events: none; opacity: 0.85; }
 
         /* ─── Image upload ─── */
         .register-asset-page .image-drop-zone {
+            position: relative !important;
+            width: 100% !important;
+            min-height: 180px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0.35rem !important;
             border: 2px dashed #d1d5db !important;
             border-radius: 0.5rem !important;
             padding: 1.5rem !important;
@@ -131,10 +142,31 @@
             cursor: pointer !important;
             transition: all 0.15s ease !important;
             background-color: #f9fafb !important;
+            overflow: hidden !important;
         }
         .register-asset-page .image-drop-zone:hover {
             border-color: #c0182a !important;
             background-color: #fef2f2 !important;
+        }
+        .register-asset-page .image-drop-zone input[type="file"] {
+            position: absolute !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            opacity: 0 !important;
+            cursor: pointer !important;
+        }
+        .register-asset-page .image-drop-zone .upload-copy {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            pointer-events: none;
+        }
+        .register-asset-page .image-drop-zone .upload-copy p {
+            max-width: 100%;
+            word-break: break-word;
         }
 
         /* ─── Scrollbar hide helper ─── */
@@ -398,12 +430,14 @@
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-textMuted mb-1.5">Asset Image</label>
-                                        <div class="image-drop-zone">
-                                            <input id="image" name="image" type="file" accept="image/png,image/jpeg,image/webp" class="sr-only">
-                                            <span class="material-symbols-outlined text-primary text-4xl mb-2">cloud_upload</span>
-                                            <p id="image-upload-label" class="font-medium text-textMain text-sm">Click or drag image to upload</p>
-                                            <p class="text-xs text-textMuted mt-1">PNG, JPG, WEBP • Max 20MB</p>
-                                        </div>
+                                        <label class="image-drop-zone" for="image">
+                                            <input id="image" name="image" type="file" accept="image/png,image/jpeg,image/webp">
+                                            <div class="upload-copy">
+                                                <span class="material-symbols-outlined text-primary text-4xl">cloud_upload</span>
+                                                <p id="image-upload-label" class="font-medium text-textMain text-sm">Click or drag image to upload</p>
+                                                <p class="text-xs text-textMuted">PNG, JPG, WEBP • Max 20MB</p>
+                                            </div>
+                                        </label>
                                     </div>
                                 </div>
                             </section>
