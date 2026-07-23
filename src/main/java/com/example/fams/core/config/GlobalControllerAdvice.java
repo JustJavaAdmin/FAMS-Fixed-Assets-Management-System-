@@ -1,5 +1,6 @@
 package com.example.fams.core.config;
 
+import com.example.fams.external.StructureSyncService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -9,6 +10,12 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 
 @ControllerAdvice
 public class GlobalControllerAdvice {
+
+    private final StructureSyncService structureSyncService;
+
+    public GlobalControllerAdvice(StructureSyncService structureSyncService) {
+        this.structureSyncService = structureSyncService;
+    }
 
     @ModelAttribute("currentPath")
     public String getCurrentPath(HttpServletRequest request) {
@@ -54,6 +61,16 @@ public class GlobalControllerAdvice {
             if (clean.length() == 1) return clean.substring(0, 1).toUpperCase();
         }
         return "?";
+    }
+
+    @ModelAttribute("currentEmployeeDepartment")
+    public Object currentEmployeeDepartment() {
+        return structureSyncService.resolveCurrentUserDepartment().orElse(null);
+    }
+
+    @ModelAttribute("companyStructureSyncStatus")
+    public Object companyStructureSyncStatus() {
+        return structureSyncService.getSyncStatus();
     }
 
 }

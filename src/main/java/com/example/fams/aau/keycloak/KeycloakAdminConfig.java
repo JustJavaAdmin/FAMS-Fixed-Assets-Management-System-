@@ -9,6 +9,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+
+import java.util.concurrent.TimeUnit;
+
 @Configuration
 public class KeycloakAdminConfig {
 
@@ -31,6 +36,20 @@ public class KeycloakAdminConfig {
 
     @Value("${keycloak.client-secret}")
     private String baseClientSecret;
+
+    @Value("${keycloak.admin-connect-timeout-ms:5000}")
+    private long adminConnectTimeoutMs;
+
+    @Value("${keycloak.admin-read-timeout-ms:10000}")
+    private long adminReadTimeoutMs;
+
+    private Client newClient() {
+        return ClientBuilder.newBuilder()
+                .connectTimeout(adminConnectTimeoutMs, TimeUnit.MILLISECONDS)
+                .readTimeout(adminReadTimeoutMs, TimeUnit.MILLISECONDS)
+                .build();
+    }
+
     @Bean
     @Qualifier("adminKeycloak")
     @Primary
@@ -42,6 +61,7 @@ public class KeycloakAdminConfig {
                 .grantType(OAuth2Constants.CLIENT_CREDENTIALS)
                 .clientId(clientId)
                 .clientSecret(clientSecret)
+                .resteasyClient(newClient())
                 .build();
     }
     @Bean(value = "baseKeycloak")
@@ -53,6 +73,7 @@ public class KeycloakAdminConfig {
                 .grantType(OAuth2Constants.CLIENT_CREDENTIALS)
                 .clientId(baseClientId)
                 .clientSecret(baseClientSecret)
+                .resteasyClient(newClient())
                 .build();
     }
 }

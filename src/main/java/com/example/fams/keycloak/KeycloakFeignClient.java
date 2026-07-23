@@ -7,94 +7,95 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.util.MultiValueMap;
 
 @FeignClient(name = "KeycloakFeignClient", url = "${keycloak.base-url}")
 public interface KeycloakFeignClient {
 
     // 🔹 Token retrieval (form-url-encoded)
     @PostMapping(
-            path = "/realms/attorneyAI/protocol/openid-connect/token",
+            path = "/realms/${keycloak.realm:fams}/protocol/openid-connect/token",
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE
     )
-    Map<String, Object> getAccessToken(@RequestParam Map<String, ?> paramMap);
+    Map<String, Object> getAccessToken(@RequestBody MultiValueMap<String, String> form);
 
     // 🔹 Users
-    @GetMapping("/admin/realms/attorneyAI/users")
+    @GetMapping("/admin/realms/${keycloak.realm:fams}/users")
     List<Map<String, Object>> getUsers(
             @RequestHeader("Authorization") String authorizationHeader
     );
 
-    @GetMapping("/admin/realms/attorneyAI/users")
+    @GetMapping("/admin/realms/${keycloak.realm:fams}/users")
     ResponseEntity<List<Map<String, Object>>> getUserByEmail(
             @RequestHeader("Authorization") String authorizationHeader,
             @RequestParam("email") String email
     );
 
-    @GetMapping("/admin/realms/attorneyAI/users/{userId}")
+    @GetMapping("/admin/realms/${keycloak.realm:fams}/users/{userId}")
     Map<String, Object> getUser(
             @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable String userId
     );
 
-    @PostMapping("/admin/realms/attorneyAI/users")
+    @PostMapping("/admin/realms/${keycloak.realm:fams}/users")
     ResponseEntity<Void> createUser(
             @RequestHeader("Authorization") String authorizationHeader,
             @RequestBody Map<String, Object> user
     );
 
-    @PutMapping("/admin/realms/attorneyAI/users/{userId}")
+    @PutMapping("/admin/realms/${keycloak.realm:fams}/users/{userId}")
     ResponseEntity<Void> updateUser(
             @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable String userId,
             @RequestBody Map<String, Object> body
     );
 
-    @DeleteMapping("/admin/realms/attorneyAI/users/{userId}")
+    @DeleteMapping("/admin/realms/${keycloak.realm:fams}/users/{userId}")
     ResponseEntity<Void> deleteUser(
             @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable String userId
     );
 
     // 🔹 Groups
-    @GetMapping("/admin/realms/attorneyAI/groups")
+    @GetMapping("/admin/realms/${keycloak.realm:fams}/groups")
     List<Map<String, Object>> getRealmGroups(
             @RequestHeader("Authorization") String authorizationHeader
     );
 
-    @PostMapping("/admin/realms/attorneyAI/groups")
+    @PostMapping("/admin/realms/${keycloak.realm:fams}/groups")
     ResponseEntity<Void> createGroup(
             @RequestHeader("Authorization") String authorizationHeader,
             @RequestBody Map<String, ?> group
     );
 
-    @PutMapping("/admin/realms/attorneyAI/groups/{groupId}")
+    @PutMapping("/admin/realms/${keycloak.realm:fams}/groups/{groupId}")
     ResponseEntity<Void> updateGroup(
             @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable String groupId,
             @RequestBody Map<String, Object> groupBody
     );
 
-    @DeleteMapping("/admin/realms/attorneyAI/groups/{groupId}")
+    @DeleteMapping("/admin/realms/${keycloak.realm:fams}/groups/{groupId}")
     ResponseEntity<Void> deleteGroup(
             @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable String groupId
     );
 
-    @GetMapping("/admin/realms/attorneyAI/groups/{groupId}/members")
+    @GetMapping("/admin/realms/${keycloak.realm:fams}/groups/{groupId}/members")
     List<Map<String, Object>> getAllUserInGroup(
             @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable("groupId") String groupId
     );
 
     // 🔹 User-group relations
-    @PutMapping("/admin/realms/attorneyAI/users/{userId}/groups/{groupId}")
+    @PutMapping("/admin/realms/${keycloak.realm:fams}/users/{userId}/groups/{groupId}")
     ResponseEntity<Void> addUserToGroup(
             @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable String userId,
             @PathVariable String groupId
     );
 
-    @GetMapping("/admin/realms/attorneyAI/users/{id}/groups")
+    @GetMapping("/admin/realms/${keycloak.realm:fams}/users/{id}/groups")
     List<Map<String, Object>> getUserGroups(
             @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable("id") String userId

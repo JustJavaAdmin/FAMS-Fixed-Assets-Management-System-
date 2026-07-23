@@ -3,9 +3,9 @@ package com.example.fams.aau.keycloak;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.context.event.EventListener;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.context.annotation.Bean;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,28 +34,34 @@ public class UserSyncService {
 
     private final KeycloakAdminService keycloakAdminService;
     private final SyncedUserRepository syncedUserRepository;
-    private final String realmName;
+    private final String syncRealmName;
 
     private volatile boolean syncedAtLeastOnce = false;
     private volatile LocalDateTime lastSuccessfulSync;
+    private volatile LocalDateTime lastAttemptedSync;
+    private volatile String lastError;
 
     public UserSyncService(
             KeycloakAdminService keycloakAdminService,
             SyncedUserRepository syncedUserRepository,
-            @Value("${keycloak.realm}") String realmName
+            @Value("${keycloak.sync-realm:${keycloak.realm}}") String syncRealmName
     ) {
         this.keycloakAdminService = keycloakAdminService;
         this.syncedUserRepository = syncedUserRepository;
-        this.realmName = realmName;
+        this.syncRealmName = syncRealmName;
     }
 
     /** Runs once when the application has started. */
-    @Bean
-    public ApplicationRunner userSyncOnStartup() {
-        return args -> {
-            log.info("Triggering initial Keycloak user sync...");
-            syncNow();
-        };
+    @EventListener(ApplicationReadyEvent.class)
+    public void userSyncOnStartup() {
+        log.info("Triggering initial Keycloak user sync for realm {}", syncRealmName);
+        Thread.startVirtualThread(() -> {
+            try {
+                syncNow();
+            } catch (Exception ex) {
+                log.warn("Initial Keycloak user sync failed: {}", ex.getMessage());
+            }
+        });
     }
 
     /** Scheduled background refresh. */
@@ -66,14 +72,15 @@ public class UserSyncService {
 
     @Transactional
     public synchronized void syncNow() {
+        lastAttemptedSync = LocalDateTime.now();
         try {
-            List<UserRepresentation> users = keycloakAdminService.listAllUsers(realmName);
+            List<UserRepresentation> users = keycloakAdminService.listAllUsers(syncRealmName);
 
             // Pull groups for each user (cheap per-user call; fine in a background job).
             Map<String, String> groupsByUser = new HashMap<>();
             for (UserRepresentation user : users) {
                 try {
-                    List<String> grp = keycloakAdminService.getUserGroups(realmName, user.getId());
+                    List<String> grp = keycloakAdminService.getUserGroups(syncRealmName, user.getId());
                     groupsByUser.put(user.getId(), toDelimited(grp));
                 } catch (Exception ex) {
                     groupsByUser.put(user.getId(), ",");
@@ -114,9 +121,11 @@ public class UserSyncService {
 
             syncedAtLeastOnce = true;
             lastSuccessfulSync = now;
+            lastError = null;
             log.info("Keycloak user sync complete: {} user(s) synced, {} removed.",
                     users.size(), toDelete.size());
         } catch (Exception ex) {
+            lastError = ex.getMessage();
             log.warn("Keycloak user sync failed (serving last snapshot): {}",
                     ex.getMessage());
         }
@@ -128,6 +137,14 @@ public class UserSyncService {
 
     public LocalDateTime getLastSuccessfulSync() {
         return lastSuccessfulSync;
+    }
+
+    public LocalDateTime getLastAttemptedSync() {
+        return lastAttemptedSync;
+    }
+
+    public String getLastError() {
+        return lastError;
     }
 
     private static String toDelimited(List<String> groups) {

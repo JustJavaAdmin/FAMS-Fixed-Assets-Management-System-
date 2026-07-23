@@ -8,6 +8,10 @@ import com.example.fams.lifecycle.AssetLifecycleWorkflow;
 import com.example.fams.lifecycle.AssetLifecycleWorkflowRepository;
 import com.example.fams.maintenance.MaintenanceStatus;
 import com.example.fams.maintenance.MaintenanceTaskRepository;
+import com.example.fams.dto.ExternalCompanyStructureDto;
+import com.example.fams.dto.ExternalEmployeeDepartmentDto;
+import com.example.fams.dto.StructureSyncStatusDto;
+import com.example.fams.external.StructureSyncService;
 import com.example.fams.organization.DepartmentHead;
 import com.example.fams.organization.DepartmentHeadRepository;
 import org.flowable.task.api.Task;
@@ -41,17 +45,20 @@ public class DepartmentController {
     private final AssetLifecycleWorkflowRepository workflowRepository;
     private final AssetLifecycleService assetLifecycleService;
     private final MaintenanceTaskRepository maintenanceTaskRepository;
+    private final StructureSyncService structureSyncService;
 
     public DepartmentController(AssetRepository assetRepository,
                                 DepartmentHeadRepository departmentHeadRepository,
                                 AssetLifecycleWorkflowRepository workflowRepository,
                                 AssetLifecycleService assetLifecycleService,
-                                MaintenanceTaskRepository maintenanceTaskRepository) {
+                                MaintenanceTaskRepository maintenanceTaskRepository,
+                                StructureSyncService structureSyncService) {
         this.assetRepository = assetRepository;
         this.departmentHeadRepository = departmentHeadRepository;
         this.workflowRepository = workflowRepository;
         this.assetLifecycleService = assetLifecycleService;
         this.maintenanceTaskRepository = maintenanceTaskRepository;
+        this.structureSyncService = structureSyncService;
     }
 
     @GetMapping("/department-head/dashboard")
@@ -70,6 +77,8 @@ public class DepartmentController {
         model.addAttribute("categoryStats", categoryStats(assets));
         model.addAttribute("recentWorkflows", recentDepartmentWorkflows(context.departmentKeys()));
         model.addAttribute("maintenanceDueCount", maintenanceDueCount(context.departments()));
+        model.addAttribute("currentEmployeeDepartment", structureSyncService.resolveCurrentUserDepartment().orElse(null));
+        model.addAttribute("orgSyncStatus", structureSyncService.getSyncStatus());
         return "department-head/dashboard";
     }
 
@@ -79,6 +88,7 @@ public class DepartmentController {
         model.addAttribute("departmentNames", context.departments());
         model.addAttribute("departmentLabel", departmentLabel(context.departments()));
         model.addAttribute("departmentAssets", departmentAssets(context.departments()));
+        model.addAttribute("currentEmployeeDepartment", structureSyncService.resolveCurrentUserDepartment().orElse(null));
         return "department-head/assets";
     }
 
@@ -90,7 +100,37 @@ public class DepartmentController {
         model.addAttribute("departmentLabel", departmentLabel(context.departments()));
         model.addAttribute("pendingApprovals", approvals);
         model.addAttribute("pendingTasks", pendingTasks(approvals));
+        model.addAttribute("orgSyncStatus", structureSyncService.getSyncStatus());
         return "department-head/approvals";
+    }
+
+    @GetMapping("/api/company-structure")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public ExternalCompanyStructureDto companyStructure() {
+        return structureSyncService.getLastCompanyStructure();
+    }
+
+    @GetMapping("/api/company-structure/me")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public ExternalEmployeeDepartmentDto myDepartment() {
+        return structureSyncService.resolveCurrentUserDepartment().orElse(null);
+    }
+
+    @GetMapping("/api/company-structure/sync-status")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public StructureSyncStatusDto syncStatus() {
+        return structureSyncService.getSyncStatus();
+    }
+
+    @GetMapping("/api/company-structure/managed")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public Map<String, Object> managedDepartments() {
+        DepartmentHeadContext context = context();
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("departments", context.departments());
+        response.put("departmentKeys", context.departmentKeys());
+        response.put("syncStatus", structureSyncService.getSyncStatus());
+        return response;
     }
 
     @PostMapping("/department-head/approvals/{workflowId}/tasks/{taskId}/decision")

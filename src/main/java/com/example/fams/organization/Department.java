@@ -21,6 +21,12 @@ public class Department {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
+    private Long externalDepartmentId;
+
+    @Column
+    private Long parentExternalDepartmentId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false)
     private Company company;
@@ -41,6 +47,24 @@ public class Department {
 
     @Column(length = 100)
     private String budget;
+
+    @Column
+    private java.time.LocalDate effectiveFrom;
+
+    @Column
+    private java.time.LocalDate effectiveTo;
+
+    @Column(length = 120)
+    private String departmentHeadName;
+
+    @Column
+    private Long departmentHeadId;
+
+    @Column(length = 40)
+    private String syncSource;
+
+    @Column
+    private java.time.LocalDateTime lastSyncedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

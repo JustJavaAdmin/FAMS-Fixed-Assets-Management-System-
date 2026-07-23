@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 @Builder
 public class DepartmentDTO {
     private Long id;
+    private Long externalDepartmentId;
+    private Long parentExternalDepartmentId;
     private Long companyId;
     private String companyName;
     private Long branchId;
@@ -21,6 +23,12 @@ public class DepartmentDTO {
     private String description;
     private String departmentCode;
     private String budget;
+    private java.time.LocalDate effectiveFrom;
+    private java.time.LocalDate effectiveTo;
+    private Long departmentHeadId;
+    private String departmentHeadName;
+    private String syncSource;
+    private java.time.LocalDateTime lastSyncedAt;
     private String status;
     private Boolean isActive;
     private LocalDateTime createdAt;

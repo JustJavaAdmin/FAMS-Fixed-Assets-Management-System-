@@ -3,6 +3,7 @@ package com.example.fams.keycloak;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -48,12 +49,12 @@ public class KeycloakService {
             return getCurrentToken();
         }
 
-        Map<String, String> params = new HashMap<>();
-        params.put("client_id", clientId);
-        params.put("client_secret", clientSecret);
-        params.put("grant_type", GRANT_TYPE);
+        LinkedMultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("client_id", clientId);
+        form.add("client_secret", clientSecret);
+        form.add("grant_type", GRANT_TYPE);
 
-        Map<String, Object> tokenResponse = keycloakClient.getAccessToken(params);
+        Map<String, Object> tokenResponse = keycloakClient.getAccessToken(form);
         setToken(tokenResponse);
 
         return getCurrentToken();

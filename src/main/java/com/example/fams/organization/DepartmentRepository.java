@@ -10,6 +10,7 @@ import java.util.Optional;
 public interface DepartmentRepository extends JpaRepository<Department, Long> {
     Optional<Department> findByNameAndBranchIdAndIsActiveTrue(String name, Long branchId);
     Optional<Department> findByDepartmentCodeAndIsActiveTrue(String departmentCode);
+    Optional<Department> findByExternalDepartmentId(Long externalDepartmentId);
     List<Department> findByCompanyIdAndIsActiveTrueOrderByCreatedAtDesc(Long companyId);
     List<Department> findByBranchIdAndIsActiveTrueOrderByCreatedAtDesc(Long branchId);
     List<Department> findByStatusAndIsActiveTrueOrderByCreatedAtDesc(Department.DepartmentStatus status);

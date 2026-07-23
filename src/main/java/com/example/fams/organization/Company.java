@@ -21,6 +21,9 @@ public class Company {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
+    private Long externalCompanyId;
+
     @NotBlank(message = "Company name is required")
     @Column(nullable = false, length = 200)
     private String name;
