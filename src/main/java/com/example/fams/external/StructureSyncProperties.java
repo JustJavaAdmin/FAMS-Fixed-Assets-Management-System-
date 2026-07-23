@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "fams.company-structure")
 public class StructureSyncProperties {
     private Long companyId = 1L;
-    private String baseUrl = "http://localhost:9006";
+    private String baseUrl = "https://justhumanresource-production.up.railway.app/";
     private long syncIntervalMs = 21_600_000L;
     private int connectTimeoutMs = 5_000;
     private int readTimeoutMs = 10_000;

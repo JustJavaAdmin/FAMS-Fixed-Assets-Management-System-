@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(
         name = "companyStructureClient",
-        url = "${fams.company-structure.base-url:http://localhost:9006}",
+        url = "${fams.company-structure.base-url:https://justhumanresource-production.up.railway.app/}",
         configuration = CompanyStructureFeignConfig.class
 )
 public interface CompanyStructureClient {
