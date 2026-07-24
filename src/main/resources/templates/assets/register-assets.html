@@ -938,10 +938,7 @@
                     renderOptions('');
                 }
 
-                // Apply to all wrappers
-                document.querySelectorAll('.searchable-select-wrapper').forEach(wrapper => {
-                    initSearchableSelect(wrapper);
-                });
+                // Initialized globally via shared searchable-select.js
 
                 // ─── Existing form logic ───
                 const assetForm = document.getElementById('asset-form');

@@ -1793,14 +1793,14 @@
                     </div>
                     <div class="space-y-1.5">
                         <label class="font-label-small text-label-small text-secondary" for="csHeadUser">User *</label>
-                        <select id="csHeadUser" name="userId" required
-                                class="w-full h-11 px-4 bg-surface-canvas border border-border-default rounded-xl text-body-default focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                                onchange="updateUserInfo()">
-                            <option value="">Select user…</option>
-                            <option th:each="user : ${users}" th:value="${user.id}"
-                                    th:text="${user.firstName} + ' ' + ${user.lastName}"
-                                    th:data-email="${user.email}"></option>
-                        </select>
+                        <div class="searchable-select-wrapper">
+                            <select id="csHeadUser" name="userId" required onchange="updateUserInfo()">
+                                <option value="">Select user…</option>
+                                <option th:each="user : ${users}" th:value="${user.id}"
+                                        th:text="${user.firstName} + ' ' + ${user.lastName}"
+                                        th:data-email="${user.email}"></option>
+                            </select>
+                        </div>
                     </div>
                     <div class="space-y-1.5">
                         <label class="font-label-small text-label-small text-secondary" for="csHeadEmail">User Email</label>

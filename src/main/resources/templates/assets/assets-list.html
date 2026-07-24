@@ -1237,10 +1237,13 @@
                 </div>
                 <div class="form-group">
                     <label for="transfer-to-employee">To Employee</label>
-                    <input id="transfer-to-employee" type="text" data-input-type="text" list="transfer-custodian-options" placeholder="New custodian or Asset Store">
-                    <datalist id="transfer-custodian-options">
-                        <option th:each="custodian : ${custodians}" th:value="${custodian.name}">Employee</option>
-                    </datalist>
+                    <div class="searchable-select-wrapper">
+                        <select id="transfer-to-employee" data-input-type="text">
+                            <option value="">New custodian or Asset Store</option>
+                            <option value="Asset Store">Asset Store</option>
+                            <option th:each="custodian : ${custodians}" th:value="${custodian.name}" th:text="${custodian.name}">Employee</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="transfer-to-department">To Department</label>

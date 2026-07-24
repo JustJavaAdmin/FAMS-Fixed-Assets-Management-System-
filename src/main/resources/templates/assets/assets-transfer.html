@@ -65,14 +65,17 @@
             <div class="lg:col-span-2 grid grid-cols-1 gap-4">
                 <div class="space-y-1.5">
                     <label class="font-label-small text-label-small text-secondary">To Employee</label>
-                    <input th:field="*{toEmployee}" data-input-type="text" list="transfer-custodian-options" placeholder="New custodian or Asset Store" class="w-full h-[38px] px-3 bg-surface-canvas border border-border-default rounded-lg text-body-default focus:ring-2 focus:ring-primary focus:border-primary outline-none">
-                    <datalist id="transfer-custodian-options">
-                        <!-- Exclude the current asset custodian from the options.
-                             Compare against common stored forms (display name, username, id) to be robust. -->
-                        <option th:each="custodian : ${custodians}"
-                                th:if="${asset.custodian} == null or (custodian.name != asset.custodian and custodian.username != asset.custodian and custodian.id != asset.custodian)"
-                                th:value="${custodian.name}">Employee</option>
-                    </datalist>
+                    <div class="searchable-select-wrapper">
+                        <select th:field="*{toEmployee}" data-input-type="text">
+                            <option value="">New custodian or Asset Store</option>
+                            <option value="Asset Store">Asset Store</option>
+                            <!-- Exclude the current asset custodian from the options.
+                                 Compare against common stored forms (display name, username, id) to be robust. -->
+                            <option th:each="custodian : ${custodians}"
+                                    th:if="${asset.custodian} == null or (custodian.name != asset.custodian and custodian.username != asset.custodian and custodian.id != asset.custodian)"
+                                    th:value="${custodian.name}" th:text="${custodian.name}">Employee</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="space-y-1.5">

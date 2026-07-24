@@ -4,7 +4,6 @@
       layout:decorate="~{layouts/app}">
 <head>
     <title>Maintenance Management | JustJava FAMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
     <style>
         /* ── Nexus Design Tokens (reused from Check-In/Out) ── */
         :root {
@@ -1291,10 +1290,12 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label for="schedule-asset-select">Asset</label>
-                            <select id="schedule-asset-select" name="assetId" class="w-full">
-                                <option value="">Use asset category instead</option>
-                                <option th:each="asset : ${assets}" th:value="${asset.id}" th:text="${asset.assetCode + ' - ' + asset.name}">Asset</option>
-                            </select>
+                            <div class="searchable-select-wrapper">
+                                <select id="schedule-asset-select" name="assetId">
+                                    <option value="">Use asset category instead</option>
+                                    <option th:each="asset : ${assets}" th:value="${asset.id}" th:text="${asset.assetCode + ' - ' + asset.name}">Asset</option>
+                                </select>
+                            </div>
                         </div>
                         <div>
                             <label for="schedule-category">Asset Category</label>
@@ -1357,10 +1358,12 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="md:col-span-2">
                             <label for="corrective-asset-select">Asset <span class="text-error">*</span></label>
-                            <select id="corrective-asset-select" name="assetId" required class="w-full">
-                                <option value="">Select asset</option>
-                                <option th:each="asset : ${assets}" th:value="${asset.id}" th:text="${asset.assetCode + ' - ' + asset.name}">Asset</option>
-                            </select>
+                            <div class="searchable-select-wrapper">
+                                <select id="corrective-asset-select" name="assetId" required>
+                                    <option value="">Select asset</option>
+                                    <option th:each="asset : ${assets}" th:value="${asset.id}" th:text="${asset.assetCode + ' - ' + asset.name}">Asset</option>
+                                </select>
+                            </div>
                         </div>
                         <div>
                             <label for="service-provider">Service Provider <span class="text-error">*</span></label>
@@ -1477,7 +1480,6 @@
     </div>
 
     <!-- ─── Scripts ─── -->
-    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     <script>
         (function() {
             'use strict';
@@ -1603,26 +1605,7 @@
             };
 
             // ── Tom-Select Initialization ──
-            const scheduleAssetSelect = document.getElementById('schedule-asset-select');
-            const correctiveAssetSelect = document.getElementById('corrective-asset-select');
-
-            if (scheduleAssetSelect) {
-                new TomSelect(scheduleAssetSelect, {
-                    placeholder: 'Search and select an asset...',
-                    searchField: ['text', 'value'],
-                    create: false,
-                    plugins: { dropdown_input: {} }
-                });
-            }
-
-            if (correctiveAssetSelect) {
-                new TomSelect(correctiveAssetSelect, {
-                    placeholder: 'Search and select an asset...',
-                    searchField: ['text', 'value'],
-                    create: false,
-                    plugins: { dropdown_input: {} }
-                });
-            }
+            // Searchable selects are initialized globally.
 
         })();
     </script>
