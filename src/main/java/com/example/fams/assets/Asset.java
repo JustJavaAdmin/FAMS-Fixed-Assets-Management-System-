@@ -58,7 +58,7 @@ public class Asset {
     @Column(nullable = false, length = 120)
     private String branch;
 
-    @Column(nullable = false, length = 120)
+    @Column(length = 120)
     private String custodian;
 
     @Column(nullable = false, length = 40)

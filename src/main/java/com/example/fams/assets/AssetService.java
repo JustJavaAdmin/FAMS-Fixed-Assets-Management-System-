@@ -93,8 +93,8 @@ public class AssetService {
                     String branch = row.getOrDefault("branch", "");
                     String custodian = row.getOrDefault("custodian", "");
 
-                    if (name.isBlank() || category.isBlank() || department.isBlank() || branch.isBlank() || custodian.isBlank()) {
-                        errors.add("Line " + lineNo + ": missing required field (name, category, department, branch, custodian are required).");
+                    if (name.isBlank() || category.isBlank() || department.isBlank() || branch.isBlank()) {
+                        errors.add("Line " + lineNo + ": missing required field (name, category, department, and branch are required).");
                         continue;
                     }
 
@@ -148,7 +148,7 @@ public class AssetService {
 
                     asset.setDepartment(department);
                     asset.setBranch(branch);
-                    asset.setCustodian(custodian);
+                    asset.setCustodian(custodian.isBlank() ? null : custodian);
 
                     String status = row.getOrDefault("status", null);
                     if (status != null && !status.isBlank()) asset.setStatus(status);
@@ -216,6 +216,7 @@ public class AssetService {
         adminSettingsService.ensureDefaults();
         validateAssetCategory(asset.getCategory());
         validateImageRequirement(image);
+        asset.setCustodian(normalizeOptionalText(asset.getCustodian()));
         applyGlobalDefaults(asset);
         asset.setAssetCode(nextAssetCode());
         AssetTags tags = assetTagGenerationService.generate(asset.getAssetCode());
@@ -453,5 +454,12 @@ public class AssetService {
     private String defaultText(String value, String fallback) {
         if (value == null || value.isBlank()) return fallback;
         return value;
+    }
+
+    private String normalizeOptionalText(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 }
