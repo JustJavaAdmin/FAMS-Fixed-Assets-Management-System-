@@ -3,31 +3,236 @@
 <head>
     <title>Asset Details | JustJava FAMS</title>
     <style>
-        .asset-image-manager .image-drop-zone {
+        /* ── asset image card ── */
+        .asset-image-card {
             position: relative;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background: #f1f5f9;
+            aspect-ratio: 16 / 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        .asset-image-card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+            transform: scale(1.01);
+        }
+        .asset-image-card img {
             width: 100%;
-            min-height: 140px;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .asset-image-card .image-placeholder-icon {
+            color: #94a3b8;
+            font-size: 52px;
+        }
+        /* overlay – appears on hover */
+        .asset-image-card .image-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 0.35rem;
-            border: 2px dashed #d1d5db;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+            color: #fff;
+            gap: 4px;
+        }
+        .asset-image-card:hover .image-overlay {
+            opacity: 1;
+        }
+        .asset-image-card .image-overlay .material-symbols-outlined {
+            font-size: 38px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .asset-image-card .image-overlay span:last-child {
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ── modal ── */
+        .image-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.50);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            animation: modalFadeIn 0.25s ease;
+        }
+        .image-modal-overlay.active {
+            display: flex;
+        }
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .image-modal-box {
+            background: #ffffff;
+            border-radius: 1.25rem;
+            width: min(640px, 92vw);
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+            padding: 0;
+            position: relative;
+            animation: modalSlideUp 0.3s ease;
+        }
+        @keyframes modalSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.97);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .image-modal-box .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #e9edf2;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            background: #fff;
+            border-radius: 1.25rem 1.25rem 0 0;
+            z-index: 2;
+        }
+        .image-modal-box .modal-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+        }
+        .image-modal-box .modal-header h3 .material-symbols-outlined {
+            font-size: 24px;
+            color: #c0182a;
+        }
+        .image-modal-box .modal-close-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: #f1f5f9;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.15s ease;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .image-modal-box .modal-close-btn:hover {
+            background: #e2e8f0;
+            transform: rotate(90deg);
+        }
+
+        .image-modal-box .modal-body {
+            padding: 1.5rem;
+        }
+
+        /* preview row inside modal */
+        .modal-image-preview {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid #eef2f6;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+        .modal-image-preview .thumb {
+            width: 96px;
+            height: 96px;
             border-radius: 0.75rem;
-            padding: 1rem;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .modal-image-preview .thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .modal-image-preview .thumb .material-symbols-outlined {
+            font-size: 38px;
+            color: #94a3b8;
+        }
+        .modal-image-preview .info {
+            flex: 1;
+            min-width: 140px;
+        }
+        .modal-image-preview .info .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+        .modal-image-preview .info .filename {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #0f172a;
+            word-break: break-all;
+        }
+        .modal-image-preview .info .hint {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        /* drop zone inside modal */
+        .modal-drop-zone {
+            border: 2px dashed #d1d9e6;
+            border-radius: 0.75rem;
+            padding: 2rem 1.5rem;
             text-align: center;
             cursor: pointer;
-            transition: all 0.15s ease;
-            background-color: #f9fafb;
-            overflow: hidden;
+            transition: all 0.2s ease;
+            background: #fafbfc;
+            position: relative;
         }
-
-        .asset-image-manager .image-drop-zone:hover {
+        .modal-drop-zone:hover {
             border-color: #c0182a;
-            background-color: #fef2f2;
+            background: #fef6f7;
         }
-
-        .asset-image-manager .image-drop-zone input[type="file"] {
+        .modal-drop-zone.dragover {
+            border-color: #c0182a;
+            background: #fef0f1;
+            transform: scale(1.01);
+        }
+        .modal-drop-zone input[type="file"] {
             position: absolute;
             inset: 0;
             width: 100%;
@@ -35,26 +240,138 @@
             opacity: 0;
             cursor: pointer;
         }
-
-        .asset-image-manager .image-drop-zone .upload-copy {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 0.35rem;
-            pointer-events: none;
+        .modal-drop-zone .drop-icon {
+            font-size: 42px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+            transition: color 0.2s ease;
+        }
+        .modal-drop-zone:hover .drop-icon {
+            color: #c0182a;
+        }
+        .modal-drop-zone .drop-text {
+            font-weight: 500;
+            color: #0f172a;
+            font-size: 0.95rem;
+        }
+        .modal-drop-zone .drop-sub {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        .modal-drop-zone .file-name-display {
+            font-weight: 500;
+            color: #c0182a;
+            margin-top: 6px;
+            font-size: 0.9rem;
+            word-break: break-all;
         }
 
-        .asset-image-manager .image-drop-zone .upload-copy p {
-            max-width: 100%;
-            word-break: break-word;
+        /* action buttons */
+        .modal-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 1.25rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid #eef2f6;
+        }
+        .modal-actions .btn {
+            height: 40px;
+            padding: 0 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-decoration: none;
+        }
+        .modal-actions .btn-primary {
+            background: #c0182a;
+            color: #fff;
+        }
+        .modal-actions .btn-primary:hover {
+            background: #a01422;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(192, 24, 42, 0.30);
+        }
+        .modal-actions .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .modal-actions .btn-outline {
+            background: transparent;
+            color: #475569;
+            border: 1px solid #d1d9e6;
+        }
+        .modal-actions .btn-outline:hover {
+            background: #f1f5f9;
+            border-color: #b0bccf;
+        }
+        .modal-actions .btn-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .modal-actions .btn-danger:hover {
+            background: #fecaca;
+        }
+        .modal-actions .btn-danger:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* status chip */
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px 12px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+        .chip-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .chip-missing {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        /* scrollbar */
+        .image-modal-box::-webkit-scrollbar {
+            width: 5px;
+        }
+        .image-modal-box::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .image-modal-box::-webkit-scrollbar-thumb {
+            background: #d1d9e6;
+            border-radius: 8px;
+        }
+        .image-modal-box::-webkit-scrollbar-thumb:hover {
+            background: #b0bccf;
+        }
+
+        /* small tweaks */
+        .text-secondary-muted {
+            color: #94a3b8;
         }
     </style>
 </head>
 <body>
 <main id="main-content" class="space-y-5 sm:space-y-6" layout:fragment="content">
 
-    <!-- Breadcrumb: allow wrap on tiny screens -->
+    <!-- Breadcrumb -->
     <nav class="flex flex-wrap items-center gap-1 sm:gap-2 text-secondary font-label-small text-label-small min-w-0">
         <a class="hover:text-primary transition-colors truncate max-w-[120px] sm:max-w-none" th:href="@{/assets}">Asset Management</a>
         <span class="material-symbols-outlined text-[14px] flex-shrink-0">chevron_right</span>
@@ -83,7 +400,7 @@
             </div>
 
             <div class="flex-1 min-w-0">
-                <!-- Code + status badge: wrap on very small screens -->
+                <!-- Code + status badge -->
                 <div class="flex items-center gap-2 mb-2 flex-wrap">
                     <span class="bg-surface-variant text-primary font-technical-data text-technical-data px-2 py-0.5 rounded font-medium flex-shrink-0" th:text="${asset.assetCode}">AST</span>
                     <span class="font-badge-label text-badge-label px-2 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0"
@@ -93,10 +410,10 @@
                     </span>
                 </div>
 
-                <!-- Asset name: clamp to avoid overflow -->
+                <!-- Asset name -->
                 <h2 class="font-page-title text-page-title text-on-surface mb-2 break-words" th:text="${asset.name}">Asset Name</h2>
 
-                <!-- Meta row: wrap freely on narrow screens -->
+                <!-- Meta row -->
                 <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-secondary text-body-default">
                     <div class="flex items-center gap-1 min-w-0">
                         <span class="material-symbols-outlined text-[18px] flex-shrink-0">category</span>
@@ -116,7 +433,7 @@
 
         <!-- Action buttons sidebar -->
         <aside class="lg:col-span-4 flex flex-col gap-2">
-            <!-- Primary CTA: full width -->
+            <!-- Primary CTA -->
             <a th:if="${asset.status != 'Disposed'}"
                th:href="@{/assets/{id}/transfer(id=${asset.id})}"
                class="w-full h-[42px] sm:h-[38px] bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all flex items-center justify-center gap-2">
@@ -124,7 +441,7 @@
                 Transfer
             </a>
 
-            <!-- Secondary actions: 2-col grid, each button gets proper min-width -->
+            <!-- Secondary actions: 2-col grid -->
             <div class="grid grid-cols-2 gap-2">
                 <a th:if="${asset.status != 'Disposed'}"
                    th:href="@{/assets/{id}/return(id=${asset.id})}"
@@ -138,7 +455,7 @@
                     <span class="material-symbols-outlined text-[16px] sm:text-[18px] flex-shrink-0">delete_forever</span>
                     <span class="truncate">Dispose</span>
                 </a>
-                <!-- Show Checkout button only when there is no active checkout for this asset -->
+                <!-- Checkout / Return Asset -->
                 <th:block th:if="${activeCheckout == null}">
                     <a th:if="${asset.status != 'Disposed'}"
                        th:href="@{/assets/checkout/{id}/form(id=${asset.id})}"
@@ -147,8 +464,6 @@
                         <span class="truncate">Checkout</span>
                     </a>
                 </th:block>
-
-                <!-- If the asset is currently checked out, show Return Asset button which opens the checkout return fragment -->
                 <th:block th:if="${activeCheckout != null}">
                     <a th:href="@{/assets/checkout/{id}/return-form(id=${activeCheckout.id})}"
                        class="h-[42px] sm:h-[38px] bg-surface-card border border-border-strong text-on-surface rounded-lg font-body-medium hover:bg-surface-canvas transition-all flex items-center justify-center gap-1.5 px-2 text-sm">
@@ -171,7 +486,7 @@
         <!-- Left / main column -->
         <section class="lg:col-span-8 space-y-4 sm:space-y-6 min-w-0">
 
-            <!-- Specs + Financial: stack on mobile, 2-col on md+ -->
+            <!-- Specs + Financial -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
 
                 <!-- Specifications -->
@@ -251,10 +566,9 @@
                 <div th:unless="${#lists.isEmpty(timeline)}" class="p-4 sm:p-5">
                     <ol class="relative border-l border-border-default ml-3 space-y-6">
                         <li th:each="event : ${timeline}" class="ml-6">
-                            <span class="absolute -left-3 w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center ring-4 ring-surface-card flex-shrink-0">
-                                <span class="material-symbols-outlined text-[14px]">check</span>
-                            </span>
-                            <!-- Stack on mobile, side-by-side on md+ -->
+                        <span class="absolute -left-3 w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center ring-4 ring-surface-card flex-shrink-0">
+                            <span class="material-symbols-outlined text-[14px]">check</span>
+                        </span>
                             <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-2 min-w-0">
                                 <div class="min-w-0">
                                     <p class="font-body-medium text-on-surface break-words" th:text="${event.title()}">Event</p>
@@ -275,77 +589,43 @@
         <!-- Right sidebar -->
         <aside class="lg:col-span-4 space-y-4 sm:space-y-6 min-w-0">
 
-            <!-- Asset image -->
-            <div class="bg-surface-card rounded-xl card-shadow border border-border-default overflow-hidden asset-image-manager">
+            <!-- ─── ASSET IMAGE CARD ─── -->
+            <div class="bg-surface-card rounded-xl card-shadow border border-border-default overflow-hidden">
                 <div class="p-4 sm:p-5 border-b border-border-default flex items-center justify-between gap-3 flex-wrap">
                     <h3 class="font-section-header text-section-header text-on-surface flex items-center gap-2">
                         <span class="w-1 h-5 bg-primary rounded-full flex-shrink-0"></span>
                         Asset Image
                     </h3>
-                    <span class="px-2.5 py-0.5 bg-surface-container-high text-on-secondary-fixed-variant rounded-full text-badge-label font-badge-label flex-shrink-0"
-                          th:text="${asset.imageUrl != null ? 'Uploaded' : 'Missing'}">Missing</span>
+                    <span class="chip" th:classappend="${asset.imageUrl != null} ? 'chip-success' : 'chip-missing'">
+                    <span class="material-symbols-outlined text-[14px]" th:if="${asset.imageUrl != null}">check_circle</span>
+                    <span class="material-symbols-outlined text-[14px]" th:unless="${asset.imageUrl != null}">warning</span>
+                    <span th:text="${asset.imageUrl != null} ? 'Uploaded' : 'Missing'">Missing</span>
+                </span>
                 </div>
-                <div class="p-4 sm:p-5 space-y-4">
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <div class="w-full sm:w-40 aspect-square rounded-xl border border-border-default bg-surface-canvas flex items-center justify-center overflow-hidden shrink-0">
-                            <img id="asset-image-preview"
-                                 th:src="${asset.imageUrl}"
-                                 th:alt="${asset.name}"
-                                 class="w-full h-full object-cover"
-                                 th:classappend="${asset.imageUrl == null ? ' hidden' : ''}">
-                            <span id="asset-image-placeholder"
-                                  class="material-symbols-outlined text-primary text-[40px] sm:text-[44px]"
-                                  th:classappend="${asset.imageUrl != null ? ' hidden' : ''}">image</span>
-                        </div>
-                        <div class="flex-1 min-w-0 space-y-3">
-                            <p class="text-body-default text-secondary" th:if="${asset.imageUrl}">
-                                Replace the current image by uploading a new file below.
-                            </p>
-                            <p class="text-body-default text-secondary" th:unless="${asset.imageUrl}">
-                                Upload an image for this asset. It will appear here after saving.
-                            </p>
 
-                            <form id="asset-image-form" th:action="@{/assets/{id}/image(id=${asset.id})}" method="post" enctype="multipart/form-data" class="space-y-3">
-                                <label class="image-drop-zone" for="asset-image-input">
-                                    <input id="asset-image-input" name="image" type="file" accept="image/png,image/jpeg,image/webp">
-                                    <div class="upload-copy">
-                                        <span class="material-symbols-outlined text-primary text-4xl">cloud_upload</span>
-                                        <p id="asset-image-upload-label" class="font-medium text-on-surface text-sm">Click or drag image to upload</p>
-                                        <p class="text-xs text-secondary">PNG, JPG, WEBP • Max 20MB</p>
-                                    </div>
-                                </label>
+                <div class="p-4 sm:p-5">
+                    <!-- clickable image card -->
+                    <div class="asset-image-card" id="assetImageTrigger" role="button" tabindex="0" aria-label="Edit asset image">
+                        <!-- image or placeholder -->
+                        <img th:if="${asset.imageUrl}" th:src="${asset.imageUrl}" th:alt="${asset.name}" id="assetImagePreview">
+                        <span th:unless="${asset.imageUrl}" class="material-symbols-outlined image-placeholder-icon">image</span>
 
-                                <div class="flex flex-wrap gap-2">
-                                    <button type="submit" class="h-[36px] px-3 bg-primary text-on-primary rounded-lg inline-flex items-center gap-1.5 text-sm font-medium hover:bg-brand-primary-dark transition-colors">
-                                        <span class="material-symbols-outlined text-[16px]">upload</span>
-                                        Save image
-                                    </button>
-                                    <button type="button" id="asset-image-clear" class="h-[36px] px-3 bg-surface-card border border-border-strong rounded-lg inline-flex items-center gap-1.5 text-sm text-on-surface hover:bg-surface-canvas transition-colors">
-                                        <span class="material-symbols-outlined text-[16px]">close</span>
-                                        Clear
-                                    </button>
-                                </div>
-                            </form>
-
-                            <form th:if="${asset.imageUrl}" th:action="@{/assets/{id}/image/remove(id=${asset.id})}" method="post"
-                                  onsubmit="return confirm('Remove the current asset image?');"
-                                  class="pt-3 border-t border-border-default">
-                                <button type="submit"
-                                        class="h-[36px] px-3 bg-surface-card border border-border-strong rounded-lg inline-flex items-center gap-1.5 text-sm text-on-surface hover:bg-surface-canvas transition-colors"
-                                        th:disabled="${assetImageRequired}">
-                                    <span class="material-symbols-outlined text-[16px]">delete</span>
-                                    Remove image
-                                </button>
-                                <p th:if="${assetImageRequired}" class="text-label-small text-secondary mt-2">
-                                    Image removal is disabled because images are required by system settings.
-                                </p>
-                            </form>
+                        <!-- hover overlay -->
+                        <div class="image-overlay">
+                            <span class="material-symbols-outlined">photo_camera</span>
+                            <span>Edit image</span>
                         </div>
                     </div>
+
+                    <!-- helper text -->
+                    <p class="text-label-small text-secondary mt-3 text-center">
+                        <span class="material-symbols-outlined text-[14px] align-middle">info</span>
+                        Click the image above to upload or change
+                    </p>
                 </div>
             </div>
 
-            <!-- Asset Tags -->
+            <!-- ─── ASSET TAGS ─── -->
             <div class="bg-surface-card rounded-xl card-shadow border border-border-default overflow-hidden">
                 <div class="p-4 sm:p-5 border-b border-border-default">
                     <h3 class="font-section-header text-section-header text-on-surface flex items-center gap-2">
@@ -358,7 +638,6 @@
                     <!-- QR Code -->
                     <div th:if="${asset.qrCodeImageDataUri != null}">
                         <p class="text-label-small text-secondary mb-2">QR Code</p>
-                        <!-- Stack vertically on small sidebar widths -->
                         <div class="flex flex-col sm:flex-row sm:items-start gap-3">
                             <img th:src="${asset.qrCodeImageDataUri}" alt="QR code"
                                  class="w-24 h-24 sm:w-[120px] sm:h-[120px] object-contain border border-border-default p-2 bg-white rounded-lg flex-shrink-0" />
@@ -387,7 +666,6 @@
                     <div th:if="${asset.barcodeImageDataUri != null}">
                         <p class="text-label-small text-secondary mb-2">Barcode</p>
                         <div class="flex flex-col gap-3">
-                            <!-- Barcode is wide; contain it properly -->
                             <div class="w-full overflow-hidden border border-border-default p-2 bg-white rounded-lg">
                                 <img th:src="${asset.barcodeImageDataUri}" alt="Barcode"
                                      class="w-full h-[52px] object-contain" />
@@ -413,48 +691,97 @@
                         </div>
                     </div>
 
-                    <!-- Empty state when no tags -->
+                    <!-- Empty state -->
                     <div th:if="${asset.qrCodeImageDataUri == null and asset.barcodeImageDataUri == null}" class="py-6 text-center">
                         <span class="material-symbols-outlined text-[32px] text-secondary">qr_code_2</span>
                         <p class="text-label-small text-secondary mt-2">No tags generated yet</p>
                     </div>
                 </div>
             </div>
-
-            <!-- Workflow State -->
-            <div class="bg-surface-card rounded-xl card-shadow border border-border-default overflow-hidden">
-                <div class="p-4 sm:p-5 border-b border-border-default">
-                    <h3 class="font-section-header text-section-header text-on-surface flex items-center gap-2">
-                        <span class="w-1 h-5 bg-primary rounded-full flex-shrink-0"></span>
-                        Workflow State
-                    </h3>
-                </div>
-
-                <!-- Empty -->
-                <div th:if="${#lists.isEmpty(workflows)}" class="p-8 text-center">
-                    <span class="material-symbols-outlined text-[40px] text-secondary">account_tree</span>
-                    <p class="font-body-medium text-on-surface mt-3">No workflow requests</p>
-                    <p class="text-label-small text-secondary mt-1">Assignment, transfer, return and disposal requests will be listed here.</p>
-                </div>
-
-                <!-- Workflow list -->
-                <div th:unless="${#lists.isEmpty(workflows)}" class="divide-y divide-border-default">
-                    <div th:each="workflow : ${workflows}" class="p-4 sm:p-5">
-                        <div class="flex items-start justify-between gap-3 flex-wrap">
-                            <div class="min-w-0">
-                                <p class="font-body-medium text-on-surface" th:text="${workflow.type}">TRANSFER</p>
-                                <p class="text-label-small text-secondary" th:text="${#temporals.format(workflow.requestedAt, 'dd MMM yyyy HH:mm')}">Date</p>
-                            </div>
-                            <span class="px-2 py-0.5 rounded-full text-badge-label font-badge-label bg-status-info/10 text-status-info flex-shrink-0" th:text="${workflow.status}">Pending</span>
-                        </div>
-                        <p class="text-body-default text-secondary mt-3 break-words" th:text="${workflow.reason ?: 'No notes provided.'}">Reason</p>
-                    </div>
-                </div>
-            </div>
         </aside>
     </div>
 
+    <!-- ─── IMAGE MODAL ─── -->
+    <div class="image-modal-overlay" id="imageModal" role="dialog" aria-modal="true" aria-labelledby="imageModalTitle">
+        <div class="image-modal-box">
+            <!-- header -->
+            <div class="modal-header">
+                <h3 id="imageModalTitle">
+                    <span class="material-symbols-outlined">photo_camera</span>
+                    Manage Asset Image
+                </h3>
+                <button class="modal-close-btn" id="imageModalClose" aria-label="Close modal">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+
+            <!-- body -->
+            <div class="modal-body">
+
+                <!-- preview row -->
+                <div class="modal-image-preview">
+                    <div class="thumb" id="modalPreviewThumb">
+                        <img th:if="${asset.imageUrl}" th:src="${asset.imageUrl}" th:alt="${asset.name}" id="modalPreviewImg">
+                        <span th:unless="${asset.imageUrl}" class="material-symbols-outlined" id="modalPreviewPlaceholder">image</span>
+                    </div>
+                    <div class="info">
+                        <div class="label">Current image</div>
+                        <div class="filename" id="modalFileName" th:text="${asset.imageUrl != null ? asset.name + ' (uploaded)' : 'No image set'}">No image set</div>
+                        <div class="hint" th:if="${asset.imageUrl != null}">Replace by uploading a new file below.</div>
+                        <div class="hint" th:unless="${asset.imageUrl != null}">Upload a PNG, JPG or WEBP file.</div>
+                    </div>
+                </div>
+
+                <!-- drop zone -->
+                <form id="imageModalForm" th:action="@{/assets/{id}/image(id=${asset.id})}" method="post" enctype="multipart/form-data">
+                    <div class="modal-drop-zone" id="modalDropZone">
+                        <input type="file" name="image" id="modalFileInput" accept="image/png,image/jpeg,image/webp">
+                        <div class="drop-icon material-symbols-outlined">cloud_upload</div>
+                        <div class="drop-text" id="modalDropText">Click or drag image here</div>
+                        <div class="drop-sub">PNG, JPG, WEBP · Max 20MB</div>
+                        <div class="file-name-display" id="modalFileNameDisplay" style="display:none;"></div>
+                    </div>
+
+                    <!-- actions -->
+                    <div class="modal-actions">
+                        <button type="submit" class="btn btn-primary" id="modalSaveBtn">
+                            <span class="material-symbols-outlined text-[18px]">upload</span>
+                            Save image
+                        </button>
+                        <button type="button" class="btn btn-outline" id="modalClearBtn">
+                            <span class="material-symbols-outlined text-[18px]">close</span>
+                            Clear selection
+                        </button>
+
+                        <!-- remove form (inline) -->
+                        <form th:if="${asset.imageUrl}" th:action="@{/assets/{id}/image/remove(id=${asset.id})}" method="post"
+                              id="modalRemoveForm" style="display:inline;"
+                              onsubmit="return confirm('Remove the current asset image?');">
+                            <button type="submit" class="btn btn-danger" id="modalRemoveBtn" th:disabled="${assetImageRequired}">
+                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                                Remove image
+                            </button>
+                        </form>
+                        <span th:if="${assetImageRequired}" class="text-label-small text-secondary ml-1 self-center">
+                    (required by system)
+                </span>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── LEGACY MODAL CONTAINER (for fragment loading) ─── -->
+    <div id="fragmentModal" aria-hidden="true" style="display:none; position:fixed; inset:0; z-index:10000; align-items:center; justify-content:center;">
+        <div id="fragmentModalBackdrop" style="position:absolute; inset:0; background:rgba(0,0,0,0.45);"></div>
+        <div id="fragmentModalContent" style="position:relative; width:clamp(320px, 80%, 880px); max-height:90vh; overflow:auto; border-radius:12px; background:#fff; padding:18px; box-shadow:0 12px 40px rgba(0,0,0,0.25); z-index:10001;">
+            <button id="fragmentModalClose" aria-label="Close" style="position:absolute; top:12px; right:12px; background:transparent; border:none; font-size:20px; cursor:pointer;display:none;">×</button>
+            <div id="fragmentModalInner"></div>
+        </div>
+    </div>
+
     <script>
+        // ── print helper ──
         function printImage(dataUri) {
             try {
                 const w = window.open('', '_blank');
@@ -472,85 +799,204 @@
 
     <script>
         (function() {
-            const input = document.getElementById('asset-image-input');
-            const preview = document.getElementById('asset-image-preview');
-            const placeholder = document.getElementById('asset-image-placeholder');
-            const label = document.getElementById('asset-image-upload-label');
-            const clearButton = document.getElementById('asset-image-clear');
-            if (!input || !label || !clearButton) {
-                return;
-            }
+            'use strict';
 
-            const originalSrc = preview ? preview.getAttribute('src') : '';
-            const originalHasImage = !!originalSrc;
+            // ── DOM refs ──
+            const trigger = document.getElementById('assetImageTrigger');
+            const modal = document.getElementById('imageModal');
+            const closeBtn = document.getElementById('imageModalClose');
+            const fileInput = document.getElementById('modalFileInput');
+            const dropZone = document.getElementById('modalDropZone');
+            const dropText = document.getElementById('modalDropText');
+            const fileNameDisplay = document.getElementById('modalFileNameDisplay');
+            const previewImg = document.getElementById('modalPreviewImg');
+            const previewPlaceholder = document.getElementById('modalPreviewPlaceholder');
+            const fileNameLabel = document.getElementById('modalFileName');
+            const clearBtn = document.getElementById('modalClearBtn');
+            const saveBtn = document.getElementById('modalSaveBtn');
+            const form = document.getElementById('imageModalForm');
+            const removeForm = document.getElementById('modalRemoveForm');
 
-            const resetPreview = () => {
-                input.value = '';
-                label.textContent = 'Click or drag image to upload';
-                if (preview) {
-                    if (originalHasImage) {
-                        preview.src = originalSrc;
-                        preview.classList.remove('hidden');
-                    } else {
-                        preview.removeAttribute('src');
-                        preview.classList.add('hidden');
-                    }
-                }
-                if (placeholder) {
-                    if (originalHasImage) {
-                        placeholder.classList.add('hidden');
-                    } else {
-                        placeholder.classList.remove('hidden');
-                    }
-                }
-            };
+            // ── original state ──
+            const originalSrc = previewImg ? previewImg.getAttribute('src') : '';
+            const hasOriginal = !!originalSrc;
 
-            input.addEventListener('change', function() {
-                const file = this.files && this.files[0];
+            function setPreview(file) {
                 if (!file) {
-                    resetPreview();
+                    // reset to original
+                    if (previewImg) {
+                        if (hasOriginal) {
+                            previewImg.src = originalSrc;
+                            previewImg.style.display = 'block';
+                        } else {
+                            previewImg.removeAttribute('src');
+                            previewImg.style.display = 'none';
+                        }
+                    }
+                    if (previewPlaceholder) {
+                        previewPlaceholder.style.display = hasOriginal ? 'none' : 'flex';
+                    }
+                    fileNameLabel.textContent = hasOriginal ? 'Current image' : 'No image set';
+                    fileNameDisplay.style.display = 'none';
+                    dropText.textContent = 'Click or drag image here';
                     return;
                 }
 
-                label.textContent = file.name.length > 35 ? file.name.slice(0, 32) + '…' : file.name;
+                // show file preview
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    if (preview) {
-                        preview.src = e.target.result;
-                        preview.classList.remove('hidden');
+                    if (previewImg) {
+                        previewImg.src = e.target.result;
+                        previewImg.style.display = 'block';
                     }
-                    if (placeholder) {
-                        placeholder.classList.add('hidden');
+                    if (previewPlaceholder) {
+                        previewPlaceholder.style.display = 'none';
                     }
+                    fileNameLabel.textContent = file.name;
+                    fileNameDisplay.textContent = file.name;
+                    fileNameDisplay.style.display = 'block';
+                    dropText.textContent = 'File selected — ready to upload';
                 };
                 reader.readAsDataURL(file);
+            }
+
+            function resetForm() {
+                fileInput.value = '';
+                setPreview(null);
+                // also clear any drag-over state
+                dropZone.classList.remove('dragover');
+            }
+
+            // ── open modal ──
+            function openModal() {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                // sync preview with current state
+                if (previewImg) {
+                    const currentSrc = previewImg.getAttribute('src');
+                    if (currentSrc && currentSrc !== '') {
+                        previewImg.style.display = 'block';
+                        if (previewPlaceholder) previewPlaceholder.style.display = 'none';
+                    } else {
+                        previewImg.style.display = 'none';
+                        if (previewPlaceholder) previewPlaceholder.style.display = 'flex';
+                    }
+                }
+                resetForm();
+            }
+
+            function closeModal() {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+                resetForm();
+            }
+
+            // ── events ──
+            trigger.addEventListener('click', openModal);
+            trigger.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openModal();
+                }
+            });
+            closeBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) closeModal();
+            });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
             });
 
-            clearButton.addEventListener('click', resetPreview);
+            // ── file input change ──
+            fileInput.addEventListener('change', function() {
+                const file = this.files && this.files[0];
+                if (file) {
+                    setPreview(file);
+                } else {
+                    resetForm();
+                }
+            });
+
+            // ── drag and drop ──
+            ['dragenter', 'dragover'].forEach(evt => {
+                dropZone.addEventListener(evt, function(e) {
+                    e.preventDefault();
+                    this.classList.add('dragover');
+                });
+            });
+            ['dragleave', 'drop'].forEach(evt => {
+                dropZone.addEventListener(evt, function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                });
+            });
+            dropZone.addEventListener('drop', function(e) {
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                    fileInput.files = files;
+                    setPreview(files[0]);
+                }
+            });
+
+            // ── clear button ──
+            clearBtn.addEventListener('click', resetForm);
+
+            // ── save: ensure file is selected ──
+            form.addEventListener('submit', function(e) {
+                const file = fileInput.files && fileInput.files[0];
+                if (!file) {
+                    e.preventDefault();
+                    alert('Please select an image file first.');
+                    return;
+                }
+                // if the user hasn't changed anything but there's an original, they might want to re-upload
+                // we allow it; the server will handle it.
+                closeModal();
+            });
+
+            // ── remove form: close modal on submit (confirm already handled) ──
+            if (removeForm) {
+                removeForm.addEventListener('submit', function() {
+                    // let the confirm dialog run first; if user confirms, close modal
+                    // but we need to let the native confirm run first, so we use a small delay
+                    setTimeout(() => { closeModal(); }, 50);
+                });
+            }
+
+            // ── also close modal if the remove button is clicked and confirmed ──
+            const removeBtn = document.getElementById('modalRemoveBtn');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function(e) {
+                    // The form's onsubmit handles confirm; we close modal after confirm
+                    // We'll use a mutation observer or just let the form submit naturally
+                    // The modal will close when the page reloads, but we can close it now
+                    // to give visual feedback.
+                    if (confirm('Remove the current asset image?')) {
+                        closeModal();
+                    } else {
+                        e.preventDefault();
+                    }
+                });
+            }
+
+            // ── ensure the modal preview stays in sync with the main page image ──
+            // after a successful upload, the page reloads, so this is fine.
+
+            console.log('📸 Asset image modal ready');
         })();
     </script>
 
-    <!-- Modal container for loading fragment forms (checkout/return/verify) -->
-    <div id="fragmentModal" aria-hidden="true" style="display:none; position:fixed; inset:0; z-index:10000; align-items:center; justify-content:center;">
-        <div id="fragmentModalBackdrop" style="position:absolute; inset:0; background:rgba(0,0,0,0.45);"></div>
-        <div id="fragmentModalContent" style="position:relative; width:clamp(320px, 80%, 880px); max-height:90vh; overflow:auto; border-radius:12px; background:#fff; padding:18px; box-shadow:0 12px 40px rgba(0,0,0,0.25); z-index:10001;">
-            <button id="fragmentModalClose" aria-label="Close" style="position:absolute;display: none; top:12px; right:12px; background:transparent; border:none; font-size:20px; cursor:pointer;display: none;">×</button>
-            <div id="fragmentModalInner"></div>
-        </div>
-    </div>
-
+    <!-- ─── FRAGMENT MODAL LOGIC (existing) ─── -->
     <script>
         (function() {
             'use strict';
 
-            // Minimal fragment modal logic: fetch server-side fragments and inject into modal
             const modal = document.getElementById('fragmentModal');
             const modalInner = document.getElementById('fragmentModalInner');
             const modalClose = document.getElementById('fragmentModalClose');
 
             function showModal(html) {
                 modalInner.innerHTML = html;
-                // Execute any inline scripts in the fetched fragment
                 modalInner.querySelectorAll('script').forEach(s => {
                     const newScript = document.createElement('script');
                     if (s.src) {
@@ -560,7 +1006,6 @@
                     }
                     document.body.appendChild(newScript).parentNode.removeChild(newScript);
                 });
-
                 modal.style.display = 'flex';
                 modal.setAttribute('aria-hidden', 'false');
             }
@@ -575,7 +1020,6 @@
             document.getElementById('fragmentModalBackdrop').addEventListener('click', hideModal);
             document.addEventListener('keydown', function(e) { if (e.key === 'Escape') hideModal(); });
 
-            // Intercept links that point to fragment endpoints and load them into the modal
             function shouldLoadAsFragment(href) {
                 return /\/assets\/checkout\/.+\/(form|return-form|verify-form)$/.test(href);
             }
@@ -586,8 +1030,9 @@
                 if (shouldLoadAsFragment(href)) {
                     a.addEventListener('click', function(e) {
                         e.preventDefault();
-                        // show small loading state while fetching
-                        showModal('<div style="padding:24px;text-align:center;"><div class="spinner" style="width:36px;height:36px;border:4px solid rgba(0,0,0,0.08);border-top-color:#c0182a;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px"></div><div>Loading…</div></div>');
+                        showModal(
+                            '<div style="padding:24px;text-align:center;"><div class="spinner" style="width:36px;height:36px;border:4px solid rgba(0,0,0,0.08);border-top-color:#c0182a;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px"></div><div>Loading…</div></div>'
+                        );
                         fetch(href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                             .then(r => r.ok ? r.text() : Promise.reject(r.statusText))
                             .then(html => showModal(html))
@@ -600,13 +1045,13 @@
                 }
             });
 
-            // Simple spinner keyframes for inline usage
             const style = document.createElement('style');
             style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
             document.head.appendChild(style);
 
         })();
     </script>
+
 </main>
 </body>
 </html>
