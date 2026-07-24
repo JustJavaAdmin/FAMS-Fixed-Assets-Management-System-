@@ -9,8 +9,9 @@
             box-sizing: border-box;
         }
 
-        html, body {
-            font-size: 16px; /* Base font size for proper scaling */
+        html,
+        body {
+            font-size: 16px;
         }
 
         .table-container {
@@ -344,11 +345,11 @@
                 gap: 12px;
                 align-items: flex-start;
             }
-            .assets-page-header > h1 {
+            .assets-page-header>h1 {
                 font-size: 1.5rem;
                 flex-shrink: 0;
             }
-            .assets-page-header > div {
+            .assets-page-header>div {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 8px;
@@ -365,18 +366,16 @@
             .max-w-7xl {
                 padding: 0 12px;
             }
-
-            /* Page header - title stays left, buttons wrap on right */
             .assets-page-header {
                 gap: 12px;
                 align-items: flex-start;
             }
-            .assets-page-header > h1 {
+            .assets-page-header>h1 {
                 font-size: 1.4rem;
                 margin: 0;
                 flex-shrink: 0;
             }
-            .assets-page-header > div {
+            .assets-page-header>div {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 8px;
@@ -390,8 +389,6 @@
             .assets-page-header .action-btn .material-symbols-outlined {
                 font-size: 16px;
             }
-
-            /* Filter bar improvements */
             .filter-bar {
                 flex-direction: column;
                 align-items: stretch;
@@ -421,15 +418,11 @@
             .filter-btn .material-symbols-outlined:last-child {
                 display: none;
             }
-
-            /* Transfer assets button */
-            .filter-bar > button {
+            .filter-bar>button {
                 flex: 1 1 100%;
                 justify-content: center;
                 font-size: 0.8rem;
             }
-
-            /* Bulk action bar improvements */
             #bulk-action-bar {
                 padding: 10px 12px;
             }
@@ -454,13 +447,12 @@
                 font-size: 0.8rem;
                 padding: 8px 10px;
             }
-
-            /* Table improvements */
             table {
                 min-width: 0 !important;
                 font-size: 0.85rem;
             }
-            th, td {
+            th,
+            td {
                 padding: 10px 8px !important;
                 white-space: normal !important;
             }
@@ -477,8 +469,6 @@
             .asset-row .dropdown-trigger {
                 padding: 4px;
             }
-
-            /* Modal improvements */
             .modal-sheet {
                 max-width: calc(100% - 16px);
                 margin-right: 8px;
@@ -495,7 +485,6 @@
                 width: 100%;
                 justify-content: center;
             }
-
             input[type="checkbox"] {
                 width: 16px;
                 height: 16px;
@@ -506,14 +495,12 @@
                 height: 16px;
                 min-width: 16px;
             }
-
             .text-gray-400 {
                 font-size: 14px !important;
             }
         }
 
         @media (max-width: 640px) {
-            /* Hide less essential columns */
             .asset-table thead th:nth-child(4),
             .asset-table tbody td:nth-child(4),
             .asset-table thead th:nth-child(5),
@@ -526,16 +513,14 @@
                 padding: 8px 6px !important;
                 font-size: 0.8rem;
             }
-
-            /* Title stays left, buttons wrap on right */
             .assets-page-header {
                 gap: 8px;
             }
-            .assets-page-header > h1 {
+            .assets-page-header>h1 {
                 font-size: 1.25rem;
                 flex-shrink: 0;
             }
-            .assets-page-header > div {
+            .assets-page-header>div {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 6px;
@@ -546,21 +531,15 @@
                 padding: 6px 10px;
                 flex: 0 1 auto;
             }
-
-            /* Asset row adjustments */
             .asset-row td:first-child {
                 padding-left: 6px !important;
             }
             .asset-row td:first-child .flex {
                 gap: 8px;
             }
-
-            /* Reduce modal padding */
             .modal-sheet {
                 padding: 16px 14px 20px;
             }
-
-            /* Bulk bar on small screens */
             #bulk-action-bar {
                 padding: 8px 10px;
             }
@@ -575,23 +554,21 @@
         }
 
         @media (max-width: 480px) {
-            html, body {
+            html,
+            body {
                 font-size: 15px;
             }
-
             .max-w-7xl {
                 padding: 0 8px;
             }
-
-            /* Title stays left, aggressive header refinement */
             .assets-page-header {
                 gap: 6px;
             }
-            .assets-page-header > h1 {
+            .assets-page-header>h1 {
                 font-size: 1.15rem;
                 flex-shrink: 0;
             }
-            .assets-page-header > div {
+            .assets-page-header>div {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 6px;
@@ -605,8 +582,6 @@
             .assets-page-header .action-btn .material-symbols-outlined {
                 font-size: 14px;
             }
-
-            /* Filter bar refinement */
             .filter-btn {
                 font-size: 0.7rem;
                 padding: 5px 8px;
@@ -615,8 +590,6 @@
             #asset-search {
                 font-size: 14px;
             }
-
-            /* Modal adjustments */
             .modal-sheet {
                 padding: 14px 12px 18px;
                 max-height: 100vh;
@@ -648,8 +621,6 @@
                 padding: 8px 16px;
                 font-size: 0.8rem;
             }
-
-            /* Table tweaks */
             .asset-table th,
             .asset-table td {
                 padding: 6px 4px !important;
@@ -662,8 +633,6 @@
                 font-size: 0.65rem;
                 padding: 0.15rem 0.4rem;
             }
-
-            /* Bulk action bar */
             #bulk-action-bar {
                 padding: 8px;
             }
@@ -686,8 +655,6 @@
             .bulk-actions .btn .material-symbols-outlined {
                 font-size: 16px;
             }
-
-            /* Empty state */
             #no-search-results {
                 padding: 1.5rem 1rem !important;
             }
@@ -697,12 +664,11 @@
         }
 
         @media (max-width: 360px) {
-            /* Ultra-small phones */
-            .assets-page-header > h1 {
+            .assets-page-header>h1 {
                 font-size: 1rem;
                 flex-shrink: 0;
             }
-            .assets-page-header > div {
+            .assets-page-header>div {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 4px;
@@ -839,30 +805,39 @@
             display: inline-block;
         }
 
-        /* ── Three‑dot dropdown ── */
+        /* ── FIXED DROPDOWN (no table scroll) ── */
         .dropdown-menu {
             display: none;
-            position: absolute;
-            right: 0;
-            top: 100%;
+            position: fixed;
             background: white;
             border: 1px solid #e5e7eb;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            min-width: 160px;
-            z-index: 20;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+            min-width: 170px;
+            max-width: 240px;
+            z-index: 1000;
             overflow: hidden;
             padding: 4px 0;
+            /* position & dimensions set by JS */
+            max-height: 80vh;
+            overflow-y: auto;
+            opacity: 0;
+            transform: scale(0.96) translateY(-4px);
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            pointer-events: none;
         }
         .dropdown-menu.open {
             display: block;
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            pointer-events: auto;
         }
         .dropdown-menu a,
         .dropdown-menu button {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 14px;
+            gap: 10px;
+            padding: 10px 16px;
             font-size: 0.85rem;
             color: #1e1e2a;
             text-decoration: none;
@@ -872,6 +847,9 @@
             cursor: pointer;
             transition: background 0.1s;
             min-height: 40px;
+            font-family: inherit;
+            text-align: left;
+            line-height: 1.3;
         }
         .dropdown-menu a:hover,
         .dropdown-menu button:hover {
@@ -884,7 +862,13 @@
             background: #fef2f2;
         }
         .dropdown-menu .material-symbols-outlined {
-            font-size: 16px;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .dropdown-menu .divider {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 4px 0;
         }
 
         /* ── Row hover ── */
@@ -973,11 +957,33 @@
             color: currentColor;
         }
 
-        /* Ensure good spacing around main content */
         .space-y-6 {
             display: flex;
             flex-direction: column;
             gap: 24px;
+        }
+
+        /* ── Dropdown trigger ── */
+        .dropdown-trigger {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #9ca3af;
+            padding: 4px 6px;
+            border-radius: 4px;
+            transition: background 0.15s, color 0.15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 32px;
+            min-width: 32px;
+        }
+        .dropdown-trigger:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        .dropdown-trigger .material-symbols-outlined {
+            font-size: 22px;
         }
     </style>
 </head>
@@ -1157,25 +1163,28 @@
                                 <span class="text-gray-400 ml-1" th:unless="${age > 0}">0%</span>
                             </th:block>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
-                            <button class="text-gray-400 hover:text-gray-600 dropdown-trigger" onclick="toggleDropdown(event, this)">
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <!-- Dropdown trigger – no position:relative on td -->
+                            <button class="dropdown-trigger" data-asset-id="${asset.id}" aria-label="Asset actions">
                                 <span class="material-symbols-outlined">more_vert</span>
                             </button>
-                            <div class="dropdown-menu" style="display:none;">
-                                <a th:href="@{'/assets/' + ${asset.id}}">
-                                    <span class="material-symbols-outlined text-gray-500" style="font-size:18px;">visibility</span>
+                            <!-- Dropdown menu – fixed positioning, managed by JS -->
+                            <div class="dropdown-menu" role="menu">
+                                <a th:href="@{'/assets/' + ${asset.id}}" role="menuitem">
+                                    <span class="material-symbols-outlined text-gray-500">visibility</span>
                                     View
                                 </a>
-                                <a th:href="@{'/assets/' + ${asset.id} + '/edit'}">
-                                    <span class="material-symbols-outlined text-gray-500" style="font-size:18px;">edit</span>
+                                <a th:href="@{'/assets/' + ${asset.id} + '/edit'}" role="menuitem">
+                                    <span class="material-symbols-outlined text-gray-500">edit</span>
                                     Edit
                                 </a>
-                                <a th:href="@{'/assets/' + ${asset.id} + '/transfer'}">
-                                    <span class="material-symbols-outlined text-gray-500" style="font-size:18px;">swap_horiz</span>
+                                <a th:href="@{'/assets/' + ${asset.id} + '/transfer'}" role="menuitem">
+                                    <span class="material-symbols-outlined text-gray-500">swap_horiz</span>
                                     Transfer
                                 </a>
-                                <button class="text-red-600" onclick="deleteAsset(${asset.id})">
-                                    <span class="material-symbols-outlined text-red-600" style="font-size:18px;">delete</span>
+                                <div class="divider"></div>
+                                <button class="text-red-600" role="menuitem" onclick="deleteAsset(${asset.id})">
+                                    <span class="material-symbols-outlined text-red-600">delete</span>
                                     Delete
                                 </button>
                             </div>
@@ -1314,12 +1323,12 @@
         </div>
     </div>
 
-    <!-- ─── SCRIPTS (unchanged) ─── -->
+    <!-- ─── SCRIPTS ─── -->
     <script>
         (function() {
             'use strict';
 
-            // ---- Bulk selection logic ----
+            // ---- Bulk selection logic (unchanged) ----
             const searchInput = document.getElementById('asset-search');
             const rows = Array.from(document.querySelectorAll('.asset-row'));
             const noSearchResults = document.getElementById('no-search-results');
@@ -1339,6 +1348,7 @@
                     return raw ? JSON.parse(raw) : [];
                 } catch (_) { return []; }
             }
+
             function saveSelection(list) {
                 sessionStorage.setItem(selectedStorageKey, JSON.stringify(list));
             }
@@ -1442,6 +1452,7 @@
                 overlay.classList.add('open');
                 document.body.classList.add('no-scroll');
             }
+
             function closeModal(id) {
                 const overlay = document.getElementById(id);
                 if (!overlay) return;
@@ -1486,7 +1497,7 @@
                 if (selected.length > 200) {
                     const more = document.createElement('div');
                     more.className = 'item text-secondary text-sm';
-                    more.textContent = `… and ${selected.length - 200} more`;
+                    more.textContent = '… and ' + (selected.length - 200) + ' more';
                     container.appendChild(more);
                 }
             }
@@ -1494,14 +1505,14 @@
             // ---- Bulk actions ----
             document.getElementById('bulk-transfer').addEventListener('click', function() {
                 populateSelectedList('transfer-selected-list');
-                document.getElementById('transfer-date').value = new Date().toISOString().slice(0,10);
+                document.getElementById('transfer-date').value = new Date().toISOString().slice(0, 10);
                 document.getElementById('transfer-submit-count').textContent = loadSelection().length;
                 openModal('bulk-transfer-modal');
             });
 
             document.getElementById('bulk-retire').addEventListener('click', function() {
                 populateSelectedList('retire-selected-list');
-                document.getElementById('retire-date').value = new Date().toISOString().slice(0,10);
+                document.getElementById('retire-date').value = new Date().toISOString().slice(0, 10);
                 document.getElementById('retire-submit-count').textContent = loadSelection().length;
                 checkRetireEnable();
                 openModal('bulk-retire-modal');
@@ -1531,8 +1542,9 @@
                     });
                     const data = await res.json();
                     const failed = (data.items || []).filter(i => !i.success).length;
-                    alert((data.succeeded || 0) + ' of ' + (data.totalRequested || 0) + ' assets submitted for transfer'
-                        + (failed ? '; ' + failed + ' failed (see lifecycle workflows).' : '.'));
+                    alert((data.succeeded || 0) + ' of ' + (data.totalRequested || 0) +
+                        ' assets submitted for transfer' + (failed ? '; ' + failed +
+                            ' failed (see lifecycle workflows).' : '.'));
                     closeModal('bulk-transfer-modal');
                     saveSelection([]);
                     sessionStorage.removeItem(selectAllKey);
@@ -1547,6 +1559,7 @@
             // ---- Retire submit ----
             const retireDate = document.getElementById('retire-date');
             const retireSubmit = document.getElementById('retire-submit');
+
             function checkRetireEnable() {
                 retireSubmit.disabled = !(retireDate.value && retireDate.value.trim().length > 0);
             }
@@ -1575,8 +1588,9 @@
                     });
                     const data = await res.json();
                     const failed = (data.items || []).filter(i => !i.success).length;
-                    alert((data.succeeded || 0) + ' of ' + (data.totalRequested || 0) + ' assets submitted for disposal'
-                        + (failed ? '; ' + failed + ' failed (see lifecycle workflows).' : '.'));
+                    alert((data.succeeded || 0) + ' of ' + (data.totalRequested || 0) +
+                        ' assets submitted for disposal' + (failed ? '; ' + failed +
+                            ' failed (see lifecycle workflows).' : '.'));
                     closeModal('bulk-retire-modal');
                     saveSelection([]);
                     sessionStorage.removeItem(selectAllKey);
@@ -1588,24 +1602,141 @@
                 }
             });
 
-            // ---- Dropdown toggles ----
-            window.toggleDropdown = function(event, btn) {
-                event.stopPropagation();
-                const menu = btn.closest('td').querySelector('.dropdown-menu');
-                const isOpen = menu.style.display === 'block';
-                document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
-                if (!isOpen) {
-                    menu.style.display = 'block';
-                }
-            };
+            // ================================================================
+            //  FIXED DROPDOWN – no table scroll, smart positioning
+            // ================================================================
 
+            // Close all dropdowns
+            function closeAllDropdowns() {
+                document.querySelectorAll('.dropdown-menu').forEach(m => {
+                    m.classList.remove('open');
+                    m.style.display = 'none';
+                    m.style.opacity = '0';
+                });
+            }
+
+            // Position and open a single dropdown
+            function openDropdown(menu, trigger) {
+                // First close any others
+                closeAllDropdowns();
+
+                // Get trigger position relative to viewport
+                const rect = trigger.getBoundingClientRect();
+                const menuWidth = Math.min(220, window.innerWidth - 24);
+                const gap = 6;
+
+                // Calculate horizontal position (align right edge with trigger's right edge)
+                let left = rect.right - menuWidth;
+                if (left < 12) left = 12;
+                if (left + menuWidth > window.innerWidth - 12) {
+                    left = window.innerWidth - menuWidth - 12;
+                }
+
+                // Calculate vertical position (below trigger, or above if not enough space)
+                let top = rect.bottom + gap;
+                let shouldFlip = false;
+
+                // We need to measure the menu height. Show it off-screen to measure.
+                menu.style.display = 'block';
+                menu.style.opacity = '0';
+                menu.style.visibility = 'hidden';
+                menu.style.left = '0px';
+                menu.style.top = '-9999px';
+                menu.style.position = 'fixed';
+
+                // Force a reflow to get accurate dimensions
+                void menu.offsetHeight;
+                const menuHeight = menu.scrollHeight + 12; // padding
+
+                // Check if it fits below
+                if (top + menuHeight > window.innerHeight - 12) {
+                    // Try above
+                    const aboveTop = rect.top - menuHeight - gap;
+                    if (aboveTop > 12) {
+                        top = aboveTop;
+                        shouldFlip = false;
+                    } else {
+                        // Still doesn't fit above, place below with max-height
+                        top = rect.bottom + gap;
+                        const maxH = window.innerHeight - top - 12;
+                        if (maxH > 60) {
+                            menu.style.maxHeight = maxH + 'px';
+                            menu.style.overflowY = 'auto';
+                        }
+                    }
+                } else {
+                    // Reset max-height if it was set
+                    menu.style.maxHeight = '80vh';
+                    menu.style.overflowY = 'auto';
+                }
+
+                // Apply position
+                menu.style.left = left + 'px';
+                menu.style.top = top + 'px';
+                menu.style.visibility = 'visible';
+                menu.style.opacity = '1';
+                menu.style.display = 'block';
+                menu.classList.add('open');
+
+                // Ensure it's not cut off horizontally after positioning
+                const finalRect = menu.getBoundingClientRect();
+                if (finalRect.right > window.innerWidth - 4) {
+                    menu.style.left = (window.innerWidth - finalRect.width - 4) + 'px';
+                }
+                if (finalRect.left < 4) {
+                    menu.style.left = '4px';
+                }
+            }
+
+            // Handle dropdown trigger clicks (delegated)
+            document.addEventListener('click', function(e) {
+                const trigger = e.target.closest('.dropdown-trigger');
+                if (!trigger) return;
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                const td = trigger.closest('td');
+                if (!td) return;
+                const menu = td.querySelector('.dropdown-menu');
+                if (!menu) return;
+
+                // If this menu is already open, close it
+                if (menu.classList.contains('open')) {
+                    closeAllDropdowns();
+                    return;
+                }
+
+                openDropdown(menu, trigger);
+            });
+
+            // Close dropdowns on scroll (capture phase to catch all scroll events)
+            document.addEventListener('scroll', closeAllDropdowns, true);
+
+            // Close dropdowns on resize
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(closeAllDropdowns, 80);
+            });
+
+            // Close dropdowns on click outside
             document.addEventListener('click', function(e) {
                 if (!e.target.closest('.dropdown-trigger') && !e.target.closest('.dropdown-menu')) {
-                    document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+                    closeAllDropdowns();
                 }
             });
 
+            // Close dropdowns on Escape
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeAllDropdowns();
+                }
+            });
+
+            // Delete asset function
             window.deleteAsset = function(id) {
+                closeAllDropdowns();
                 if (confirm('Are you sure you want to delete this asset?')) {
                     alert('Asset ' + id + ' deleted (demo).');
                 }
@@ -1622,6 +1753,9 @@
                 row.dataset.assetName = name;
                 row.dataset.assetCode = code;
             });
+
+            // Ensure dropdowns are closed on page load
+            closeAllDropdowns();
 
         })();
     </script>
