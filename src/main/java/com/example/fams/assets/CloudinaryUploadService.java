@@ -11,10 +11,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.LinkedHashMap;
+import java.util.TreeMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -87,8 +89,45 @@ public class CloudinaryUploadService {
         }
     }
 
-    private boolean isConfigured() {
+    boolean isConfigured() {
         return hasText(cloudName) && hasText(apiKey) && hasText(apiSecret);
+    }
+
+    public void delete(String publicId) {
+        if (!hasText(publicId) || !isConfigured()) {
+            return;
+        }
+
+        try {
+            long timestamp = System.currentTimeMillis() / 1000L;
+            Map<String, String> signedParams = new LinkedHashMap<>();
+            signedParams.put("invalidate", "true");
+            signedParams.put("public_id", publicId);
+            signedParams.put("timestamp", String.valueOf(timestamp));
+
+            String body = "api_key=" + encode(apiKey)
+                    + "&invalidate=true"
+                    + "&public_id=" + encode(publicId)
+                    + "&signature=" + encode(sign(signedParams))
+                    + "&timestamp=" + timestamp;
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.cloudinary.com/v1_1/" + cloudName + "/image/destroy"))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new IllegalStateException("Cloudinary delete failed with status " + response.statusCode());
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to delete asset image", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Asset image delete was interrupted", e);
+        }
     }
 
     private boolean hasText(String value) {
@@ -97,7 +136,7 @@ public class CloudinaryUploadService {
 
     private String sign(Map<String, String> params) {
         StringBuilder source = new StringBuilder();
-        params.forEach((key, value) -> {
+        new TreeMap<>(params).forEach((key, value) -> {
             if (!source.isEmpty()) {
                 source.append('&');
             }
@@ -141,6 +180,10 @@ public class CloudinaryUploadService {
 
     private void write(ByteArrayOutputStream output, String value) throws IOException {
         output.write(value.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
     private String extract(String json, Pattern pattern) {

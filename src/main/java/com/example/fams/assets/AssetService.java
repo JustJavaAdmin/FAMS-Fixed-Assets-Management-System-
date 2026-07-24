@@ -230,6 +230,62 @@ public class AssetService {
     }
 
     @Transactional
+    public Asset updateImage(Long assetId, MultipartFile image) {
+        if (image == null || image.isEmpty()) {
+            throw new IllegalArgumentException("Select an image file to upload.");
+        }
+        if (!cloudinaryUploadService.isConfigured()) {
+            throw new IllegalStateException("Asset image storage is not configured.");
+        }
+
+        Asset asset = findById(assetId);
+        String previousPublicId = asset.getImagePublicId();
+        AssetImageUpload upload = cloudinaryUploadService.upload(image)
+                .orElseThrow(() -> new IllegalStateException("Unable to upload asset image."));
+
+        asset.setImageUrl(upload.secureUrl());
+        asset.setImagePublicId(upload.publicId());
+        Asset savedAsset = assetRepository.save(asset);
+
+        if (previousPublicId != null && !previousPublicId.isBlank()) {
+            try {
+                cloudinaryUploadService.delete(previousPublicId);
+            } catch (Exception ignored) {
+                // Best effort cleanup. The new image is already saved.
+            }
+        }
+
+        return savedAsset;
+    }
+
+    @Transactional
+    public Asset removeImage(Long assetId) {
+        Asset asset = findById(assetId);
+        boolean requiresImage = Boolean.parseBoolean(adminSettingsService.getParameterValue("asset.require.image", "false"));
+        if (requiresImage) {
+            throw new IllegalStateException("Asset image is required by the current system settings.");
+        }
+        String previousPublicId = asset.getImagePublicId();
+        if ((previousPublicId == null || previousPublicId.isBlank()) && (asset.getImageUrl() == null || asset.getImageUrl().isBlank())) {
+            throw new IllegalArgumentException("This asset does not have an image to remove.");
+        }
+
+        asset.setImageUrl(null);
+        asset.setImagePublicId(null);
+        Asset savedAsset = assetRepository.save(asset);
+
+        if (previousPublicId != null && !previousPublicId.isBlank()) {
+            try {
+                cloudinaryUploadService.delete(previousPublicId);
+            } catch (Exception ignored) {
+                // Best effort cleanup. The asset image is already cleared locally.
+            }
+        }
+
+        return savedAsset;
+    }
+
+    @Transactional
     public BulkOperationResultDto bulkAssign(BulkAssignRequestDto request) {
         BulkOperationResultDto result = new BulkOperationResultDto();
         result.setTotalRequested(request.getAssetIds() == null ? 0 : request.getAssetIds().size());

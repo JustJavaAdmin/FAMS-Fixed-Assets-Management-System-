@@ -2,6 +2,54 @@
 <html class="light" lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layouts/app}">
 <head>
     <title>Asset Details | JustJava FAMS</title>
+    <style>
+        .asset-image-manager .image-drop-zone {
+            position: relative;
+            width: 100%;
+            min-height: 140px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            border: 2px dashed #d1d5db;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            background-color: #f9fafb;
+            overflow: hidden;
+        }
+
+        .asset-image-manager .image-drop-zone:hover {
+            border-color: #c0182a;
+            background-color: #fef2f2;
+        }
+
+        .asset-image-manager .image-drop-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .asset-image-manager .image-drop-zone .upload-copy {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            pointer-events: none;
+        }
+
+        .asset-image-manager .image-drop-zone .upload-copy p {
+            max-width: 100%;
+            word-break: break-word;
+        }
+    </style>
 </head>
 <body>
 <main id="main-content" class="space-y-5 sm:space-y-6" layout:fragment="content">
@@ -227,6 +275,76 @@
         <!-- Right sidebar -->
         <aside class="lg:col-span-4 space-y-4 sm:space-y-6 min-w-0">
 
+            <!-- Asset image -->
+            <div class="bg-surface-card rounded-xl card-shadow border border-border-default overflow-hidden asset-image-manager">
+                <div class="p-4 sm:p-5 border-b border-border-default flex items-center justify-between gap-3 flex-wrap">
+                    <h3 class="font-section-header text-section-header text-on-surface flex items-center gap-2">
+                        <span class="w-1 h-5 bg-primary rounded-full flex-shrink-0"></span>
+                        Asset Image
+                    </h3>
+                    <span class="px-2.5 py-0.5 bg-surface-container-high text-on-secondary-fixed-variant rounded-full text-badge-label font-badge-label flex-shrink-0"
+                          th:text="${asset.imageUrl != null ? 'Uploaded' : 'Missing'}">Missing</span>
+                </div>
+                <div class="p-4 sm:p-5 space-y-4">
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="w-full sm:w-40 aspect-square rounded-xl border border-border-default bg-surface-canvas flex items-center justify-center overflow-hidden shrink-0">
+                            <img id="asset-image-preview"
+                                 th:src="${asset.imageUrl}"
+                                 th:alt="${asset.name}"
+                                 class="w-full h-full object-cover"
+                                 th:classappend="${asset.imageUrl == null ? ' hidden' : ''}">
+                            <span id="asset-image-placeholder"
+                                  class="material-symbols-outlined text-primary text-[40px] sm:text-[44px]"
+                                  th:classappend="${asset.imageUrl != null ? ' hidden' : ''}">image</span>
+                        </div>
+                        <div class="flex-1 min-w-0 space-y-3">
+                            <p class="text-body-default text-secondary" th:if="${asset.imageUrl}">
+                                Replace the current image by uploading a new file below.
+                            </p>
+                            <p class="text-body-default text-secondary" th:unless="${asset.imageUrl}">
+                                Upload an image for this asset. It will appear here after saving.
+                            </p>
+
+                            <form id="asset-image-form" th:action="@{/assets/{id}/image(id=${asset.id})}" method="post" enctype="multipart/form-data" class="space-y-3">
+                                <label class="image-drop-zone" for="asset-image-input">
+                                    <input id="asset-image-input" name="image" type="file" accept="image/png,image/jpeg,image/webp">
+                                    <div class="upload-copy">
+                                        <span class="material-symbols-outlined text-primary text-4xl">cloud_upload</span>
+                                        <p id="asset-image-upload-label" class="font-medium text-on-surface text-sm">Click or drag image to upload</p>
+                                        <p class="text-xs text-secondary">PNG, JPG, WEBP • Max 20MB</p>
+                                    </div>
+                                </label>
+
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="submit" class="h-[36px] px-3 bg-primary text-on-primary rounded-lg inline-flex items-center gap-1.5 text-sm font-medium hover:bg-brand-primary-dark transition-colors">
+                                        <span class="material-symbols-outlined text-[16px]">upload</span>
+                                        Save image
+                                    </button>
+                                    <button type="button" id="asset-image-clear" class="h-[36px] px-3 bg-surface-card border border-border-strong rounded-lg inline-flex items-center gap-1.5 text-sm text-on-surface hover:bg-surface-canvas transition-colors">
+                                        <span class="material-symbols-outlined text-[16px]">close</span>
+                                        Clear
+                                    </button>
+                                </div>
+                            </form>
+
+                            <form th:if="${asset.imageUrl}" th:action="@{/assets/{id}/image/remove(id=${asset.id})}" method="post"
+                                  onsubmit="return confirm('Remove the current asset image?');"
+                                  class="pt-3 border-t border-border-default">
+                                <button type="submit"
+                                        class="h-[36px] px-3 bg-surface-card border border-border-strong rounded-lg inline-flex items-center gap-1.5 text-sm text-on-surface hover:bg-surface-canvas transition-colors"
+                                        th:disabled="${assetImageRequired}">
+                                    <span class="material-symbols-outlined text-[16px]">delete</span>
+                                    Remove image
+                                </button>
+                                <p th:if="${assetImageRequired}" class="text-label-small text-secondary mt-2">
+                                    Image removal is disabled because images are required by system settings.
+                                </p>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Asset Tags -->
             <div class="bg-surface-card rounded-xl card-shadow border border-border-default overflow-hidden">
                 <div class="p-4 sm:p-5 border-b border-border-default">
@@ -350,6 +468,66 @@
                 alert('Unable to open print preview.');
             }
         }
+    </script>
+
+    <script>
+        (function() {
+            const input = document.getElementById('asset-image-input');
+            const preview = document.getElementById('asset-image-preview');
+            const placeholder = document.getElementById('asset-image-placeholder');
+            const label = document.getElementById('asset-image-upload-label');
+            const clearButton = document.getElementById('asset-image-clear');
+            if (!input || !label || !clearButton) {
+                return;
+            }
+
+            const originalSrc = preview ? preview.getAttribute('src') : '';
+            const originalHasImage = !!originalSrc;
+
+            const resetPreview = () => {
+                input.value = '';
+                label.textContent = 'Click or drag image to upload';
+                if (preview) {
+                    if (originalHasImage) {
+                        preview.src = originalSrc;
+                        preview.classList.remove('hidden');
+                    } else {
+                        preview.removeAttribute('src');
+                        preview.classList.add('hidden');
+                    }
+                }
+                if (placeholder) {
+                    if (originalHasImage) {
+                        placeholder.classList.add('hidden');
+                    } else {
+                        placeholder.classList.remove('hidden');
+                    }
+                }
+            };
+
+            input.addEventListener('change', function() {
+                const file = this.files && this.files[0];
+                if (!file) {
+                    resetPreview();
+                    return;
+                }
+
+                label.textContent = file.name.length > 35 ? file.name.slice(0, 32) + '…' : file.name;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (preview) {
+                        preview.src = e.target.result;
+                        preview.classList.remove('hidden');
+                    }
+                    if (placeholder) {
+                        placeholder.classList.add('hidden');
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+
+            clearButton.addEventListener('click', resetPreview);
+        })();
     </script>
 
     <!-- Modal container for loading fragment forms (checkout/return/verify) -->

@@ -137,6 +137,11 @@ public class AssetController {
         return adminSettingsService.findActiveCategories();
     }
 
+    @ModelAttribute("assetImageRequired")
+    public boolean assetImageRequired() {
+        return Boolean.parseBoolean(adminSettingsService.getParameterValue("asset.require.image", "false"));
+    }
+
     @GetMapping("/assets")
     public String assetsList(Model model) {
         model.addAttribute("assets", assetService.findAll());
@@ -268,6 +273,30 @@ public class AssetController {
             redirectAttributes.addFlashAttribute("asset", asset);
             return "redirect:/assets/register";
         }
+    }
+
+    @PostMapping("/assets/{id}/image")
+    public String updateAssetImage(@PathVariable Long id,
+                                   @RequestParam(value = "image", required = false) MultipartFile image,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            Asset asset = assetService.updateImage(id, image);
+            redirectAttributes.addFlashAttribute("successMessage", "Image updated for " + asset.getAssetCode() + ".");
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/assets/" + id;
+    }
+
+    @PostMapping("/assets/{id}/image/remove")
+    public String removeAssetImage(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            Asset asset = assetService.removeImage(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Image removed from " + asset.getAssetCode() + ".");
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/assets/" + id;
     }
 
     @PostMapping("/api/assets/bulk-assign")
