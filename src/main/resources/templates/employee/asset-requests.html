@@ -424,6 +424,36 @@
 </head>
 <body>
 <main id="main-content" layout:fragment="content">
+
+    <script>
+        function openRequestModal(button) {
+            const assetId = button.dataset.assetId;
+            const assetName = button.dataset.assetName;
+
+            document.getElementById('modal-asset-id').value = assetId;
+            document.getElementById('modal-asset-name').textContent = assetName;
+            document.getElementById('reason').value = '';
+            document.getElementById('request-modal').classList.add('open');
+        }
+
+        function closeRequestModal() {
+            document.getElementById('request-modal').classList.remove('open');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('request-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeRequestModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('request-modal').classList.contains('open')) {
+                closeRequestModal();
+            }
+        });
+    </script>
     <div class="max-w-7xl space-y-6" style="max-width: 1400px; margin: 0 auto; padding: 0 16px; display: flex; flex-direction: column; gap: 24px;">
         <!-- Header -->
         <div class="flex items-center justify-between" style="display: flex; align-items: center; justify-content: space-between;">
@@ -478,7 +508,7 @@
                                     <span th:unless="${asset.purchaseCost}">N/A</span>
                                 </span>
                             </div>
-                            <button class="btn-request" onclick="openRequestModal(this)" th:data-asset-name="${asset.name}">
+                            <button type="button" class="btn-request" onclick="openRequestModal(this)" th:data-asset-id="${asset.id}" th:data-asset-name="${asset.name}">
                                 <span class="material-symbols-outlined" style="display: inline; font-size: 16px; vertical-align: middle;">add_circle</span>
                                 Request
                             </button>
@@ -526,6 +556,7 @@
                             </div>
                             <div th:if="${request.status.name() == 'PENDING'}" class="request-actions">
                                 <form th:action="@{/employee/asset-requests/{id}/cancel(id=${request.id})}" method="post" style="flex: 1;">
+                                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                                     <button type="submit" class="btn-small btn-cancel" onclick="return confirm('Cancel this request?')">Cancel</button>
                                 </form>
                             </div>
@@ -541,9 +572,11 @@
         <div class="modal-sheet">
             <div class="modal-header">
                 <h3>Request Asset</h3>
-                <button class="modal-close" onclick="closeRequestModal()">&times;</button>
+                <button type="button" class="modal-close" onclick="closeRequestModal()">&times;</button>
             </div>
             <form id="request-form" method="post" th:action="@{/employee/asset-requests}">
+                <!-- CSRF token for Spring Security (if enabled) -->
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                 <div class="modal-body">
                     <div class="form-group">
                         <label>Asset</label>
@@ -562,36 +595,6 @@
             </form>
         </div>
     </div>
-
-    <script>
-        function openRequestModal(button) {
-            const assetId = button.dataset.assetId;
-            const assetName = button.dataset.assetName;
-
-            document.getElementById('modal-asset-id').value = assetId;
-            document.getElementById('modal-asset-name').textContent = assetName;
-            document.getElementById('reason').value = '';
-            document.getElementById('request-modal').classList.add('open');
-        }
-
-        function closeRequestModal() {
-            document.getElementById('request-modal').classList.remove('open');
-        }
-
-        // Close modal when clicking outside
-        document.getElementById('request-modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeRequestModal();
-            }
-        });
-
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && document.getElementById('request-modal').classList.contains('open')) {
-                closeRequestModal();
-            }
-        });
-    </script>
 </main>
 </body>
 </html>

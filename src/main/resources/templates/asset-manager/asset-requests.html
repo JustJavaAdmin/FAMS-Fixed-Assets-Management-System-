@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layouts/app}">
 <head>
-    <title>Asset Requests - Approval | JustJava FAMS</title>
+    <title>Asset Requests - Approval | Asset Manager | JustJava FAMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * {
@@ -31,8 +31,13 @@
             gap: 12px;
         }
 
+        .header-icon {
+            font-size: 28px;
+            color: #3b82f6;
+        }
+
         .badge-large {
-            background: #dc2626;
+            background: #3b82f6;
             color: white;
             padding: 6px 14px;
             border-radius: 20px;
@@ -96,7 +101,7 @@
 
         .request-card:hover {
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            border-color: #dc2626;
+            border-color: #3b82f6;
         }
 
         .request-card-header {
@@ -167,7 +172,7 @@
             padding: 10px;
             background: #f9fafb;
             border-radius: 6px;
-            border-left: 3px solid #dc2626;
+            border-left: 3px solid #3b82f6;
             max-height: 80px;
             overflow-y: auto;
         }
@@ -197,8 +202,8 @@
 
         .form-group textarea:focus {
             outline: none;
-            border-color: #dc2626;
-            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
 
         .button-group {
@@ -335,12 +340,12 @@
         }
 
         .modal-btn-primary {
-            background: #dc2626;
+            background: #3b82f6;
             color: white;
         }
 
         .modal-btn-primary:hover {
-            background: #b91c1c;
+            background: #2563eb;
         }
 
         .modal-btn-secondary {
@@ -377,8 +382,8 @@
         <!-- Header -->
         <div class="page-header">
             <h1>
-                <span class="material-symbols-outlined" style="font-size: 28px;">pending_actions</span>
-                Asset Requests
+                <span class="material-symbols-outlined header-icon">check_circle</span>
+                Request Approvals
                 <span class="badge-large" id="pending-count" th:text="${pendingCount}">0</span>
             </h1>
         </div>
@@ -401,7 +406,7 @@
         <div th:if="${#lists.isEmpty(pendingRequests)}" class="empty-state">
             <span class="material-symbols-outlined">inbox</span>
             <h2 style="font-size: 1.25rem; color: #1e1e2a; margin-bottom: 8px;">No Pending Requests</h2>
-            <p>All asset requests have been reviewed.</p>
+            <p>All asset requests have been reviewed. Great work!</p>
         </div>
 
         <!-- Requests Grid -->
@@ -433,8 +438,7 @@
                         <div class="meta-value" th:text="${request.asset.assetCode}">AST-0001</div>
                     </div>
                     <div class="meta-item">
-                        <div class="meta-label">Status</div>
-                        <div class="meta-value" style="color: #f59e0b; font-weight: 600;">PENDING</div>
+                        <div class="meta-label">Asset Value</div>
                     </div>
                 </div>
 
@@ -466,7 +470,7 @@
                 <h3>Approve Request</h3>
                 <button type="button" class="modal-close" onclick="closeModal('approve-modal')">&times;</button>
             </div>
-            <form id="approve-form" method="post" th:action="@{/admin/asset-requests/1/approve}">
+            <form id="approve-form" method="post" th:action="@{/asset-manager/asset-requests/1/approve}">
                 <!-- CSRF token for Spring Security (if enabled) -->
                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                 <div class="modal-body">
@@ -498,7 +502,7 @@
                 <h3>Reject Request</h3>
                 <button type="button" class="modal-close" onclick="closeModal('reject-modal')">&times;</button>
             </div>
-            <form id="reject-form" method="post" th:action="@{/admin/asset-requests/1/reject}">
+            <form id="reject-form" method="post" th:action="@{/asset-manager/asset-requests/1/reject}">
                 <!-- CSRF token for Spring Security (if enabled) -->
                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                 <div class="modal-body">
@@ -511,7 +515,7 @@
                         <div style="padding: 10px 14px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 500; color: #1e1e2a;" id="reject-requester"></div>
                     </div>
                     <div class="form-group">
-                        <label for="reject-notes">Reason for Rejection <span style="color: #dc2626;">*</span></label>
+                        <label for="reject-notes">Reason for Rejection <span style="color: #ef4444;">*</span></label>
                         <textarea id="reject-notes" name="notes" placeholder="Please explain why this request is being rejected..." required></textarea>
                     </div>
                 </div>
@@ -532,7 +536,7 @@
             document.getElementById('approve-asset-name').textContent = assetName;
             document.getElementById('approve-requester').textContent = requester;
             document.getElementById('approve-notes').value = '';
-            document.getElementById('approve-form').action = `/admin/asset-requests/${requestId}/approve`;
+            document.getElementById('approve-form').action = `/asset-manager/asset-requests/${requestId}/approve`;
 
             document.getElementById('approve-modal').classList.add('open');
         }
@@ -545,7 +549,7 @@
             document.getElementById('reject-asset-name').textContent = assetName;
             document.getElementById('reject-requester').textContent = requester;
             document.getElementById('reject-notes').value = '';
-            document.getElementById('reject-form').action = `/admin/asset-requests/${requestId}/reject`;
+            document.getElementById('reject-form').action = `/asset-manager/asset-requests/${requestId}/reject`;
 
             document.getElementById('reject-modal').classList.add('open');
         }

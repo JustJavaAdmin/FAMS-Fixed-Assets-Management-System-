@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layouts/app}">
+<head>
+    <title>Asset Manager Dashboard | JustJava FAMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 0;
+            color: #1e1e2a;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .dashboard-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s;
+        }
+
+        .dashboard-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-color: #3b82f6;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .card-icon.pending {
+            background: #dbeafe;
+            color: #3b82f6;
+        }
+
+        .card-icon.approved {
+            background: #dcfce7;
+            color: #10b981;
+        }
+
+        .card-icon.rejected {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .card-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1e1e2a;
+            margin: 0;
+        }
+
+        .card-link {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 10px 16px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+
+        .card-link:hover {
+            background: #2563eb;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e1e2a;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            border: 1px solid #bfdbfe;
+            color: #0c4a6e;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+        }
+
+        .empty-state .material-symbols-outlined {
+            font-size: 48px;
+            color: #d1d5db;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<main id="main-content" layout:fragment="content">
+    <div class="page-container">
+        <!-- Header -->
+        <div class="page-header">
+            <h1>Asset Manager Dashboard</h1>
+        </div>
+
+        <!-- Info Alert -->
+        <div class="alert alert-info">
+            <span class="material-symbols-outlined">info</span>
+            <span>You have <strong th:text="${pendingCount}">0</strong> pending asset request(s) awaiting approval.</span>
+        </div>
+
+        <!-- Dashboard Cards -->
+        <div class="dashboard-grid">
+            <!-- Pending Requests Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-icon pending">
+                        <span class="material-symbols-outlined">pending_actions</span>
+                    </div>
+                </div>
+                <p class="card-title">PENDING REQUESTS</p>
+                <p class="card-value" th:text="${pendingCount}">0</p>
+                <a href="/asset-manager/asset-requests" class="card-link">
+                    Review Requests
+                    <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle;">arrow_forward</span>
+                </a>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-icon approved">
+                        <span class="material-symbols-outlined">task_alt</span>
+                    </div>
+                </div>
+                <p class="card-title">QUICK ACTIONS</p>
+                <div style="margin-top: 16px;">
+                    <a href="/asset-manager/asset-requests" style="display: inline-block; margin-bottom: 10px; color: #3b82f6; text-decoration: none; font-size: 0.9rem; font-weight: 500;">
+                        → View All Requests
+                    </a>
+                </div>
+            </div>
+
+            <!-- Support Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-icon rejected">
+                        <span class="material-symbols-outlined">help</span>
+                    </div>
+                </div>
+                <p class="card-title">NEED HELP?</p>
+                <p style="font-size: 0.85rem; color: #6b7280; margin-top: 10px;">Contact your system administrator for assistance or feature requests.</p>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>
+
