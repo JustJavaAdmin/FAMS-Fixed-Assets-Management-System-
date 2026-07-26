@@ -6,6 +6,8 @@ import com.example.fams.assets.AssetService;
 import com.example.fams.assets.AssetCheckout;
 import com.example.fams.assets.AssetCheckoutRepository;
 import com.example.fams.assets.AssetCheckoutService;
+import com.example.fams.assets.AssetRequest;
+import com.example.fams.assets.AssetRequestService;
 import com.example.fams.lifecycle.AssetLifecycleService;
 import com.example.fams.lifecycle.AssetLifecycleWorkflowRepository;
 import com.example.fams.lifecycle.LifecycleWorkflowForm;
@@ -42,6 +44,7 @@ public class EmployeeController {
     private final AssetLifecycleWorkflowRepository workflowRepository;
     private final AssetCheckoutService checkoutService;
     private final AssetCheckoutRepository checkoutRepository;
+    private final AssetRequestService assetRequestService;
 
     public EmployeeController(AssetRepository assetRepository,
                               AssetService assetService,
@@ -50,7 +53,8 @@ public class EmployeeController {
                               AssetLifecycleService assetLifecycleService,
                               AssetLifecycleWorkflowRepository workflowRepository,
                               AssetCheckoutService checkoutService,
-                              AssetCheckoutRepository checkoutRepository) {
+                              AssetCheckoutRepository checkoutRepository,
+                              AssetRequestService assetRequestService) {
         this.assetRepository = assetRepository;
         this.assetService = assetService;
         this.maintenanceService = maintenanceService;
@@ -59,6 +63,7 @@ public class EmployeeController {
         this.workflowRepository = workflowRepository;
         this.checkoutService = checkoutService;
         this.checkoutRepository = checkoutRepository;
+        this.assetRequestService = assetRequestService;
     }
 
     @GetMapping("/employee/dashboard")
@@ -187,48 +192,47 @@ public class EmployeeController {
         return "redirect:/employee/checkout-requests";
     }
 
-    /**
-     * Employee submits a return request for an asset they currently have checked out. The request
-     * goes into "Pending Return" and is approved by the asset manager before the asset is returned.
-     */
-    @PostMapping("/employee/checkout/{checkoutId}/request-return")
-    public String requestReturn(@PathVariable Long checkoutId,
-                                @RequestParam(required = false) String conditionAfterReturn,
-                                @RequestParam(required = false) String returnNotes,
-                                RedirectAttributes redirectAttributes) {
+    // ──────────────────────────────────────────────────────────────────────
+    // Asset Request Endpoints
+    // ──────────────────────────────────────────────────────────────────────
+
+    @GetMapping("/employee/asset-requests")
+    public String assetRequests(Model model) {
+        String current = currentUsername();
+        List<AssetRequest> myRequests = assetRequestService.getMyRequests(current);
+        List<Asset> availableAssets = assetRequestService.getAvailableAssets();
+
+        model.addAttribute("myRequests", myRequests);
+        model.addAttribute("availableAssets", availableAssets);
+        model.addAttribute("pendingCount", assetRequestService.getMyPendingRequests(current).size());
+        return "employee/asset-requests";
+    }
+
+    @PostMapping("/employee/asset-requests")
+    public String submitAssetRequest(@RequestParam Long assetId,
+                                    @RequestParam(required = false) String reason,
+                                    RedirectAttributes redirectAttributes) {
         try {
-            AssetCheckout checkout = checkoutRepository.findById(checkoutId)
-                    .orElseThrow(() -> new NoSuchElementException("Checkout not found with id: " + checkoutId));
             String current = currentUsername();
-            if (checkout.getRequestedBy() != null && !checkout.getRequestedBy().equalsIgnoreCase(current)
-                    && checkout.getCheckedOutBy() != null && !checkout.getCheckedOutBy().equalsIgnoreCase(current)) {
-                throw new NoSuchElementException("This checkout does not belong to the current employee.");
-            }
-            checkoutService.requestReturn(checkout.getId(), conditionAfterReturn, returnNotes);
-            redirectAttributes.addFlashAttribute("successMessage",
-                    "Return request submitted. Awaiting asset manager approval.");
+            String displayName = currentDisplayName();
+            assetRequestService.requestAsset(assetId, current, displayName, reason);
+            redirectAttributes.addFlashAttribute("successMessage", "Asset request submitted for approval.");
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/employee/asset-requests";
+    }
+
+    @PostMapping("/employee/asset-requests/{requestId}/cancel")
+    public String cancelAssetRequest(@PathVariable Long requestId,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            assetRequestService.cancelRequest(requestId);
+            redirectAttributes.addFlashAttribute("successMessage", "Asset request cancelled.");
         } catch (IllegalArgumentException | NoSuchElementException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/employee/assets";
-    }
-
-    /**
-     * Display the employee's return-request form for a checkout they own.
-     */
-    @GetMapping("/employee/checkout/{checkoutId}/request-return-form")
-    public String requestReturnForm(@PathVariable Long checkoutId, Model model) {
-        AssetCheckout checkout = checkoutRepository.findById(checkoutId)
-                .orElseThrow(() -> new NoSuchElementException("Checkout not found with id: " + checkoutId));
-        String current = currentUsername();
-        boolean owns = (checkout.getRequestedBy() != null && checkout.getRequestedBy().equalsIgnoreCase(current))
-                || (checkout.getCheckedOutBy() != null && checkout.getCheckedOutBy().equalsIgnoreCase(current));
-        if (!owns) {
-            throw new NoSuchElementException("This checkout does not belong to the current employee.");
-        }
-        model.addAttribute("checkout", checkout);
-        model.addAttribute("asset", checkout.getAsset());
-        return "assets/fragments/checkout-form :: request-return-form";
+        return "redirect:/employee/asset-requests";
     }
 
     private List<Asset> assignedAssets() {

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layouts/app}">
+<head>
+    <title>Asset Requests - Approval | JustJava FAMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 0;
+            color: #1e1e2a;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge-large {
+            background: #dc2626;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .alert .material-symbols-outlined {
+            font-size: 18px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .empty-state .material-symbols-outlined {
+            font-size: 64px;
+            color: #d1d5db;
+            margin-bottom: 12px;
+        }
+
+        .requests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 20px;
+        }
+
+        .request-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s;
+        }
+
+        .request-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-color: #dc2626;
+        }
+
+        .request-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+            gap: 10px;
+        }
+
+        .request-card-title {
+            flex: 1;
+        }
+
+        .asset-name {
+            font-weight: 600;
+            color: #1e1e2a;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .requester-info {
+            font-size: 0.85rem;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .request-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .meta-item {
+            font-size: 0.8rem;
+        }
+
+        .meta-label {
+            color: #6b7280;
+            margin-bottom: 2px;
+        }
+
+        .meta-value {
+            color: #1e1e2a;
+            font-weight: 500;
+        }
+
+        .reason-section {
+            margin-bottom: 16px;
+        }
+
+        .reason-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .reason-text {
+            font-size: 0.85rem;
+            color: #374151;
+            padding: 10px;
+            background: #f9fafb;
+            border-radius: 6px;
+            border-left: 3px solid #dc2626;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: #1e1e2a;
+            margin-bottom: 6px;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 70px;
+        }
+
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-approve {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-approve:hover {
+            background: #059669;
+        }
+
+        .btn-reject {
+            background: #f3f4f6;
+            color: #1e1e2a;
+        }
+
+        .btn-reject:hover {
+            background: #e5e7eb;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(3px);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-sheet {
+            background: white;
+            width: 100%;
+            max-width: 500px;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+            overflow: hidden;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.open .modal-sheet {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1e1e2a;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background 0.15s;
+        }
+
+        .modal-close:hover {
+            background: #f3f4f6;
+            color: #1e1e2a;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #e5e7eb;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            min-height: 40px;
+        }
+
+        .modal-btn-primary {
+            background: #dc2626;
+            color: white;
+        }
+
+        .modal-btn-primary:hover {
+            background: #b91c1c;
+        }
+
+        .modal-btn-secondary {
+            background: #f3f4f6;
+            color: #1e1e2a;
+        }
+
+        .modal-btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .modal-btn.approve {
+            background: #10b981;
+        }
+
+        .modal-btn.approve:hover {
+            background: #059669;
+        }
+
+        @media (max-width: 768px) {
+            .requests-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .request-meta {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<main id="main-content" layout:fragment="content">
+    <div class="page-container">
+        <!-- Header -->
+        <div class="page-header">
+            <h1>
+                <span class="material-symbols-outlined" style="font-size: 28px;">pending_actions</span>
+                Asset Requests
+                <span class="badge-large" id="pending-count" th:text="${pendingCount}">0</span>
+            </h1>
+        </div>
+
+        <!-- Messages -->
+        <th:block th:if="${successMessage}">
+            <div class="alert alert-success">
+                <span class="material-symbols-outlined">check_circle</span>
+                <span th:text="${successMessage}"></span>
+            </div>
+        </th:block>
+        <th:block th:if="${errorMessage}">
+            <div class="alert alert-error">
+                <span class="material-symbols-outlined">error</span>
+                <span th:text="${errorMessage}"></span>
+            </div>
+        </th:block>
+
+        <!-- Empty State -->
+        <div th:if="${#lists.isEmpty(pendingRequests)}" class="empty-state">
+            <span class="material-symbols-outlined">inbox</span>
+            <h2 style="font-size: 1.25rem; color: #1e1e2a; margin-bottom: 8px;">No Pending Requests</h2>
+            <p>All asset requests have been reviewed.</p>
+        </div>
+
+        <!-- Requests Grid -->
+        <div th:unless="${#lists.isEmpty(pendingRequests)}" class="requests-grid">
+            <div th:each="request : ${pendingRequests}" class="request-card">
+                <!-- Card Header -->
+                <div class="request-card-header">
+                    <div class="request-card-title">
+                        <div class="asset-name" th:text="${request.asset.name}">Asset Name</div>
+                        <div class="requester-info">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">person</span>
+                            <span th:text="${request.requestedByName}">Employee Name</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Meta Information -->
+                <div class="request-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Category</div>
+                        <div class="meta-value" th:text="${request.asset.category}">Category</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Requested Date</div>
+                        <div class="meta-value" th:text="${#temporals.format(request.requestedAt, 'MMM dd, yyyy')}">Jan 01, 2024</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Asset Code</div>
+                        <div class="meta-value" th:text="${request.asset.assetCode}">AST-0001</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Status</div>
+                        <div class="meta-value" style="color: #f59e0b; font-weight: 600;">PENDING</div>
+                    </div>
+                </div>
+
+                <!-- Reason Section -->
+                <div class="reason-section" th:if="${request.reason}">
+                    <div class="reason-label">Request Reason</div>
+                    <div class="reason-text" th:text="${request.reason}">Employee reason for requesting this asset</div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="button-group">
+                    <button class="btn btn-approve" onclick="openApproveModal(this)" th:data-request-id="${request.id}" th:data-asset-name="${request.asset.name}" th:data-requester="${request.requestedByName}">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">check_circle</span>
+                        Approve
+                    </button>
+                    <button class="btn btn-reject" onclick="openRejectModal(this)" th:data-request-id="${request.id}" th:data-asset-name="${request.asset.name}" th:data-requester="${request.requestedByName}">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">cancel</span>
+                        Reject
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approve Modal -->
+    <div id="approve-modal" class="modal-overlay">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <h3>Approve Request</h3>
+                <button class="modal-close" onclick="closeModal('approve-modal')">&times;</button>
+            </div>
+            <form id="approve-form" method="post" th:action="@{/admin/asset-requests/1/approve}">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Asset Requested</label>
+                        <div style="padding: 10px 14px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 500; color: #1e1e2a;" id="approve-asset-name"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Requested By</label>
+                        <div style="padding: 10px 14px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 500; color: #1e1e2a;" id="approve-requester"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="approve-notes">Approval Notes (Optional)</label>
+                        <textarea id="approve-notes" name="notes" placeholder="Add any notes about this approval..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('approve-modal')">Cancel</button>
+                    <button type="submit" class="modal-btn modal-btn-primary approve">Approve Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div id="reject-modal" class="modal-overlay">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <h3>Reject Request</h3>
+                <button class="modal-close" onclick="closeModal('reject-modal')">&times;</button>
+            </div>
+            <form id="reject-form" method="post" th:action="@{/admin/asset-requests/1/reject}">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Asset Requested</label>
+                        <div style="padding: 10px 14px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 500; color: #1e1e2a;" id="reject-asset-name"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Requested By</label>
+                        <div style="padding: 10px 14px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 500; color: #1e1e2a;" id="reject-requester"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reject-notes">Reason for Rejection <span style="color: #dc2626;">*</span></label>
+                        <textarea id="reject-notes" name="notes" placeholder="Please explain why this request is being rejected..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('reject-modal')">Cancel</button>
+                    <button type="submit" class="modal-btn modal-btn-primary" style="background: #ef4444;">Reject Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openApproveModal(button) {
+            const requestId = button.dataset.requestId;
+            const assetName = button.dataset.assetName;
+            const requester = button.dataset.requester;
+
+            document.getElementById('approve-asset-name').textContent = assetName;
+            document.getElementById('approve-requester').textContent = requester;
+            document.getElementById('approve-notes').value = '';
+            document.getElementById('approve-form').action = `/admin/asset-requests/${requestId}/approve`;
+
+            document.getElementById('approve-modal').classList.add('open');
+        }
+
+        function openRejectModal(button) {
+            const requestId = button.dataset.requestId;
+            const assetName = button.dataset.assetName;
+            const requester = button.dataset.requester;
+
+            document.getElementById('reject-asset-name').textContent = assetName;
+            document.getElementById('reject-requester').textContent = requester;
+            document.getElementById('reject-notes').value = '';
+            document.getElementById('reject-form').action = `/admin/asset-requests/${requestId}/reject`;
+
+            document.getElementById('reject-modal').classList.add('open');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('open');
+        }
+
+        // Close modals when clicking outside
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('open');
+                }
+            });
+        });
+
+        // Close modals with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.open').forEach(modal => {
+                    modal.classList.remove('open');
+                });
+            }
+        });
+    </script>
+</main>
+</body>
+</html>
+

@@ -3,6 +3,8 @@ package com.example.fams.admin;
 import com.example.fams.aau.keycloak.KeycloakAdminService;
 import com.example.fams.aau.keycloak.SyncedUser;
 import com.example.fams.aau.keycloak.SyncedUserRepository;
+import com.example.fams.assets.AssetRequest;
+import com.example.fams.assets.AssetRequestService;
 import com.example.fams.core.config.AuthenticationManager;
 import com.example.fams.dashboard.DashboardModelService;
 import com.example.fams.settings.AdminSettingsService;
@@ -41,6 +43,9 @@ public class AdminController {
 
     @Autowired
     SyncedUserRepository syncedUserRepository;
+
+    @Autowired
+    AssetRequestService assetRequestService;
 
     /** Primary realm this admin panel operates on. */
     @Value("fams")
@@ -341,13 +346,57 @@ public class AdminController {
        ══════════════════════════════════════════════════════════ */
 
     @GetMapping("/user/{userId}/groups")
-    @ResponseBody
     public ResponseEntity<List<String>> getUserGroups(@PathVariable String userId) {
         try {
             return ResponseEntity.ok(keycloakAdminService.getUserGroups(realmName, userId));
         } catch (Exception ex) {
             return ResponseEntity.ok(Collections.emptyList());
         }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // Asset Request Approval Endpoints
+    // ══════════════════════════════════════════════════════════
+
+    @GetMapping("/asset-requests")
+    public String assetRequests(Model model) {
+        List<AssetRequest> pendingRequests = assetRequestService.getPendingRequests();
+        model.addAttribute("pendingRequests", pendingRequests);
+        model.addAttribute("pendingCount", pendingRequests.size());
+        return "admin/asset-requests";
+    }
+
+    @PostMapping("/asset-requests/{requestId}/approve")
+    public String approveAssetRequest(@PathVariable Long requestId,
+                                     @RequestParam(required = false) String notes,
+                                     @AuthenticationPrincipal OidcUser principal,
+                                     RedirectAttributes redirectAttributes) {
+        try {
+            String approverName = resolveUserName(principal);
+            String approverUsername = principal != null ? principal.getPreferredUsername() : "admin";
+            AssetRequest approved = assetRequestService.approveRequest(requestId, approverUsername, approverName, notes);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Asset request approved and assigned to " + approved.getRequestedByName());
+        } catch (IllegalArgumentException | NoSuchElementException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", sanitize(ex.getMessage()));
+        }
+        return "redirect:/admin/asset-requests";
+    }
+
+    @PostMapping("/asset-requests/{requestId}/reject")
+    public String rejectAssetRequest(@PathVariable Long requestId,
+                                    @RequestParam(required = false) String notes,
+                                    @AuthenticationPrincipal OidcUser principal,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            String rejecterName = resolveUserName(principal);
+            String rejecterUsername = principal != null ? principal.getPreferredUsername() : "admin";
+            assetRequestService.rejectRequest(requestId, rejecterUsername, rejecterName, notes);
+            redirectAttributes.addFlashAttribute("successMessage", "Asset request rejected.");
+        } catch (IllegalArgumentException | NoSuchElementException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", sanitize(ex.getMessage()));
+        }
+        return "redirect:/admin/asset-requests";
     }
 
     /* ══════════════════════════════════════════════════════════
