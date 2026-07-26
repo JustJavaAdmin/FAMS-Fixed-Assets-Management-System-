@@ -1140,10 +1140,10 @@
                                 <div class="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase flex-shrink-0" th:text="${#strings.substring(asset.custodian, 0, 2)}">AB</div>
                                 <span class="text-sm text-gray-600 truncate" th:text="${asset.custodian}">Custodian</span>
                             </div>
-                            <button th:unless="${asset.custodian}" class="btn-assign">
-                                <span class="material-symbols-outlined">add_circle</span>
-                                Assign
-                            </button>
+                             <button th:unless="${asset.custodian}" class="btn-assign" th:data-asset-id="${asset.id}" th:data-asset-name="${asset.name}">
+                                 <span class="material-symbols-outlined">add_circle</span>
+                                 Assign
+                             </button>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="badge-category" th:text="${asset.category}">Category</span>
@@ -1223,6 +1223,70 @@
     </div>
 
     <!-- ─── MODALS ─── -->
+    <!-- Assign Modal (Single Asset) -->
+    <div id="assign-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="assign-title">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <h3 id="assign-title">Assign Asset</h3>
+                <button class="modal-close" data-close="assign-modal" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Asset</label>
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb;">
+                        <span class="material-symbols-outlined text-gray-400" style="font-size: 24px;">inventory_2</span>
+                        <span id="assign-asset-name" style="font-weight: 500; color: #1e1e2a;"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="assign-to-employee">Assign To Employee <span style="color: #dc2626;">*</span></label>
+                    <div class="searchable-select-wrapper">
+                        <select id="assign-to-employee" data-input-type="text" required>
+                            <option value="">-- Select Employee --</option>
+                            <option th:each="custodian : ${custodians}" th:value="${custodian.name}" th:text="${custodian.name}">Employee</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="assign-date">Effective Date</label>
+                    <input id="assign-date" type="date">
+                </div>
+                <div class="form-group">
+                    <label for="assign-notes">Notes</label>
+                    <textarea id="assign-notes" data-input-type="text" rows="2" placeholder="Optional assignment notes" style="resize: vertical; min-height: 50px;"></textarea>
+                </div>
+                <!-- Error State -->
+                <div id="assign-error" style="display: none; padding: 10px 14px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #dc2626; font-size: 0.9rem; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: flex-start; gap: 10px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; flex-shrink: 0; margin-top: 2px;">error</span>
+                        <div id="assign-error-text"></div>
+                    </div>
+                </div>
+                <!-- Loading State -->
+                <div id="assign-loading" style="display: none; padding: 12px; text-align: center; color: #6b7280;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <div style="width: 4px; height: 4px; background: #dc2626; border-radius: 50%; animation: pulse 1.5s infinite;"></div>
+                        <div style="width: 4px; height: 4px; background: #dc2626; border-radius: 50%; animation: pulse 1.5s infinite; animation-delay: 0.2s;"></div>
+                        <div style="width: 4px; height: 4px; background: #dc2626; border-radius: 50%; animation: pulse 1.5s infinite; animation-delay: 0.4s;"></div>
+                        <span style="margin-left: 8px; font-size: 0.9rem;">Assigning asset...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-close="assign-modal" id="assign-cancel">Cancel</button>
+                <button id="assign-submit" class="btn btn-primary">Assign Asset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add pulse animation to styles -->
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+    </style>
+
     <div id="bulk-transfer-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="transfer-title">
         <div class="modal-sheet">
             <div class="modal-header">
@@ -1744,6 +1808,126 @@
                     alert('Asset ' + id + ' deleted (demo).');
                 }
             };
+
+            // ---- Single Asset Assignment ----
+            function resetAssignModal() {
+                document.getElementById('assign-to-employee').value = '';
+                document.getElementById('assign-date').value = new Date().toISOString().slice(0, 10);
+                document.getElementById('assign-notes').value = '';
+                document.getElementById('assign-error').style.display = 'none';
+                document.getElementById('assign-error-text').textContent = '';
+                document.getElementById('assign-loading').style.display = 'none';
+                document.getElementById('assign-submit').disabled = false;
+                document.getElementById('assign-cancel').disabled = false;
+            }
+
+            function showAssignError(message) {
+                const errorEl = document.getElementById('assign-error');
+                const textEl = document.getElementById('assign-error-text');
+                textEl.textContent = message;
+                errorEl.style.display = 'block';
+            }
+
+            function hideAssignError() {
+                document.getElementById('assign-error').style.display = 'none';
+            }
+
+            function showAssignLoading() {
+                document.getElementById('assign-loading').style.display = 'block';
+                document.getElementById('assign-submit').disabled = true;
+                document.getElementById('assign-cancel').disabled = true;
+            }
+
+            function hideAssignLoading() {
+                document.getElementById('assign-loading').style.display = 'none';
+                document.getElementById('assign-submit').disabled = false;
+                document.getElementById('assign-cancel').disabled = false;
+            }
+
+            // Handle assign button clicks
+            document.addEventListener('click', function(e) {
+                const assignBtn = e.target.closest('.btn-assign');
+                if (!assignBtn) return;
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                const assetId = assignBtn.dataset.assetId;
+                const assetName = assignBtn.dataset.assetName;
+
+                if (!assetId) return;
+
+                // Reset and populate modal
+                resetAssignModal();
+                document.getElementById('assign-asset-name').textContent = assetName;
+                assignBtn.dataset.currentAssetId = assetId;
+                openModal('assign-modal');
+            });
+
+            // Handle assign submit
+            document.getElementById('assign-submit').addEventListener('click', async function() {
+                const employee = document.getElementById('assign-to-employee').value.trim();
+                const modal = document.getElementById('assign-modal');
+                const assignBtn = Array.from(document.querySelectorAll('.btn-assign'))
+                    .find(b => b.dataset.currentAssetId);
+
+                if (!assignBtn) {
+                    showAssignError('Error: Could not find asset. Please try again.');
+                    return;
+                }
+
+                const assetId = Number(assignBtn.dataset.currentAssetId);
+
+                hideAssignError();
+
+                if (!employee) {
+                    showAssignError('Please select an employee to assign the asset to.');
+                    return;
+                }
+
+                showAssignLoading();
+
+                const payload = {
+                    assetIds: [assetId],
+                    assignedTo: employee,
+                    assignmentDate: document.getElementById('assign-date').value || new Date().toISOString().slice(0, 10),
+                    notes: document.getElementById('assign-notes').value.trim() || null
+                };
+
+                try {
+                    const res = await fetch('/api/assets/bulk-assign', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const data = await res.json();
+
+                    if (data.succeeded && data.succeeded > 0) {
+                        hideAssignLoading();
+                        closeModal('assign-modal');
+
+                        // Reload the page to reflect changes
+                        setTimeout(() => {
+                            location.reload();
+                        }, 500);
+                    } else {
+                        hideAssignLoading();
+                        const failReason = (data.items && data.items.length > 0 && data.items[0].message)
+                            ? data.items[0].message
+                            : 'Failed to assign asset. Please try again.';
+                        showAssignError(failReason);
+                    }
+                } catch (error) {
+                    hideAssignLoading();
+                    console.error('Assignment error:', error);
+                    showAssignError('An error occurred while assigning the asset. Please try again.');
+                }
+            });
 
             // ---- Init ----
             saveSelection([]);
