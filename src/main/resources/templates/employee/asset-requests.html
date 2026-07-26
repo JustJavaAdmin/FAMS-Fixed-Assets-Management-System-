@@ -1,22 +1,74 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layouts/app}">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layouts/employee-layout}">
 <head>
     <title>Asset Requests | JustJava FAMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        * {
-            box-sizing: border-box;
+        /* ── Reset & base ── */
+        * { box-sizing: border-box; }
+
+        /* ── Page header with stats ── */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
-        .request-container {
+        .page-header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+        }
+
+        .page-header .subtitle {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #475569;
+        }
+
+        .stat-item .number {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #0f172a;
+        }
+
+        .stat-item .number.pending { color: #d97706; }
+        .stat-item .number.approved { color: #059669; }
+        .stat-item .number.rejected { color: #dc2626; }
+
+        /* ── Catalog grid ── */
+        .catalog-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 24px;
-            max-width: 1400px;
-            margin: 0 auto;
         }
 
-        .section {
+        @media (max-width: 1024px) {
+            .catalog-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── Catalog panel ── */
+        .catalog-panel {
             background: white;
             border-radius: 12px;
             border: 1px solid #e5e7eb;
@@ -24,243 +76,400 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
 
-        .section-header {
-            padding: 20px 24px;
+        .panel-header {
+            padding: 16px 20px;
             border-bottom: 1px solid #e5e7eb;
-            background: #f9fafb;
+            background: #fafafc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
-        .section-header h2 {
-            margin: 0;
-            font-size: 1.125rem;
+        .panel-header h2 {
+            font-size: 1rem;
             font-weight: 600;
-            color: #1e1e2a;
+            color: #0f172a;
+            margin: 0;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
-        .section-header .badge {
-            background: #dc2626;
-            color: white;
-            font-size: 0.75rem;
-            padding: 4px 10px;
-            border-radius: 20px;
+        .panel-header .count-badge {
+            background: #e5e7eb;
+            color: #475569;
+            font-size: 0.7rem;
             font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 20px;
         }
 
-        .section-body {
-            padding: 24px;
+        .panel-body {
+            padding: 16px 20px 20px;
         }
 
-        .available-assets-grid {
-            display: grid;
-            gap: 12px;
-            max-height: 600px;
-            overflow-y: auto;
+        /* ── Search & filter bar ── */
+        .search-filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
         }
 
-        .asset-card {
-            padding: 16px;
-            border: 1px solid #e5e7eb;
+        .search-filter-bar .search-wrap {
+            flex: 1;
+            min-width: 180px;
+            position: relative;
+        }
+
+        .search-filter-bar .search-wrap input {
+            width: 100%;
+            height: 38px;
+            padding: 0 12px 0 38px;
+            border: 1px solid #d1d5db;
             border-radius: 8px;
+            font-size: 0.85rem;
             background: white;
-            transition: all 0.2s;
+            transition: border 0.15s, box-shadow 0.15s;
+        }
+
+        .search-filter-bar .search-wrap input:focus {
+            outline: none;
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+
+        .search-filter-bar .search-wrap .material-symbols-outlined {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 20px;
+        }
+
+        .search-filter-bar .filter-select {
+            height: 38px;
+            padding: 0 32px 0 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            background: white;
+            color: #1e1e2a;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            min-width: 120px;
             cursor: pointer;
         }
 
-        .asset-card:hover {
+        .search-filter-bar .filter-select:focus {
+            outline: none;
             border-color: #dc2626;
-            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
         }
 
-        .asset-card-header {
+        /* ── Asset cards in catalog ── */
+        .asset-catalog {
+            display: grid;
+            gap: 12px;
+            max-height: 520px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .asset-catalog::-webkit-scrollbar {
+            width: 4px;
+        }
+        .asset-catalog::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+
+        .asset-catalog-item {
             display: flex;
-            gap: 10px;
-            align-items: flex-start;
-            margin-bottom: 8px;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: white;
+            transition: all 0.2s ease;
+            cursor: default;
         }
 
-        .asset-icon {
-            width: 40px;
-            height: 40px;
-            background: #f3f4f6;
-            border-radius: 6px;
+        .asset-catalog-item:hover {
+            border-color: #dc2626;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.08);
+        }
+
+        .asset-catalog-item .asset-icon {
+            width: 42px;
+            height: 42px;
+            background: #f1f5f9;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
         }
 
-        .asset-card-title {
-            font-weight: 600;
-            color: #1e1e2a;
-            font-size: 0.95rem;
-            flex: 1;
+        .asset-catalog-item .asset-icon .material-symbols-outlined {
+            font-size: 24px;
+            color: #64748b;
         }
 
-        .asset-card-meta {
+        .asset-catalog-item .asset-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .asset-catalog-item .asset-info .name {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 0.9rem;
+        }
+
+        .asset-catalog-item .asset-info .meta {
             display: flex;
             gap: 12px;
-            font-size: 0.8rem;
-            color: #6b7280;
-            margin-top: 8px;
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 2px;
+            flex-wrap: wrap;
         }
 
-        .asset-card-meta span {
+        .asset-catalog-item .asset-info .meta span {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
         }
 
-        .btn-request {
-            margin-top: 12px;
-            width: 100%;
-            padding: 8px 12px;
+        .asset-catalog-item .asset-info .meta .material-symbols-outlined {
+            font-size: 14px;
+        }
+
+        .asset-catalog-item .asset-status {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 20px;
+            flex-shrink: 0;
+        }
+
+        .asset-catalog-item .asset-status.available {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .asset-catalog-item .asset-status.limited {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .asset-catalog-item .btn-request-sm {
+            padding: 6px 16px;
             background: #dc2626;
             color: white;
             border: none;
             border-radius: 6px;
             font-weight: 500;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             cursor: pointer;
-            transition: all 0.15s;
+            transition: background 0.15s;
+            flex-shrink: 0;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        .btn-request:hover {
+        .asset-catalog-item .btn-request-sm:hover {
             background: #b91c1c;
         }
 
-        .requests-list {
-            display: grid;
-            gap: 12px;
-            max-height: 700px;
-            overflow-y: auto;
+        .asset-catalog-item .btn-request-sm .material-symbols-outlined {
+            font-size: 16px;
         }
 
-        .request-item {
-            padding: 16px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            background: white;
-        }
-
-        .request-item.pending {
-            border-left: 4px solid #f59e0b;
-        }
-
-        .request-item.approved {
-            border-left: 4px solid #10b981;
-        }
-
-        .request-item.rejected {
-            border-left: 4px solid #ef4444;
-        }
-
-        .request-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 10px;
-        }
-
-        .request-asset-name {
-            font-weight: 600;
-            color: #1e1e2a;
-            font-size: 0.95rem;
-        }
-
-        .request-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .request-status.pending {
-            background: #fef3c7;
-            color: #b45309;
-        }
-
-        .request-status.approved {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .request-status.rejected {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .request-date {
-            font-size: 0.8rem;
-            color: #6b7280;
-            margin-bottom: 8px;
-        }
-
-        .request-reason {
-            font-size: 0.85rem;
-            color: #374151;
-            padding: 8px;
-            background: #f9fafb;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            max-height: 60px;
-            overflow-y: auto;
-        }
-
-        .request-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-small {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 500;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.15s;
-            flex: 1;
-        }
-
-        .btn-cancel {
-            background: #f3f4f6;
-            color: #1e1e2a;
-        }
-
-        .btn-cancel:hover {
-            background: #e5e7eb;
-        }
-
+        /* ── Empty state ── */
         .empty-state {
             text-align: center;
             padding: 40px 20px;
-            color: #6b7280;
+            color: #64748b;
         }
 
         .empty-state .material-symbols-outlined {
             font-size: 48px;
             color: #d1d5db;
-            margin-bottom: 12px;
+            display: block;
+            margin: 0 auto 12px;
         }
 
+        /* ── My Requests panel ── */
+        .requests-list {
+            display: grid;
+            gap: 12px;
+            max-height: 520px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .requests-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .requests-list::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+
+        .request-card {
+            padding: 14px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: white;
+            border-left-width: 4px;
+            transition: border-color 0.2s;
+        }
+
+        .request-card.pending {
+            border-left-color: #f59e0b;
+        }
+
+        .request-card.approved {
+            border-left-color: #10b981;
+        }
+
+        .request-card.rejected {
+            border-left-color: #ef4444;
+        }
+
+        .request-card .request-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .request-card .request-top .asset-name {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 0.9rem;
+        }
+
+        .request-card .request-top .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            flex-shrink: 0;
+        }
+
+        .request-card .request-top .status-badge.pending {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .request-card .request-top .status-badge.approved {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .request-card .request-top .status-badge.rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .request-card .request-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+
+        .request-card .request-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .request-card .request-meta .material-symbols-outlined {
+            font-size: 14px;
+        }
+
+        .request-card .request-reason {
+            font-size: 0.85rem;
+            color: #475569;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            margin: 8px 0 10px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .request-card .request-notes {
+            font-size: 0.8rem;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin: 8px 0 10px;
+        }
+
+        .request-card .request-notes.approved-note {
+            background: #f0fdf4;
+            color: #065f46;
+            border: 1px solid #bbf7d0;
+        }
+
+        .request-card .request-notes.rejected-note {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .request-card .request-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .btn-cancel-sm {
+            padding: 4px 14px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .btn-cancel-sm:hover {
+            background: #fecaca;
+        }
+
+        /* ── Modal ── */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(3px);
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
             z-index: 100;
             display: flex;
             justify-content: center;
             align-items: center;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
         }
 
         .modal-overlay.open {
@@ -271,34 +480,35 @@
         .modal-sheet {
             background: white;
             width: 100%;
-            max-width: 500px;
-            border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            max-width: 520px;
+            border-radius: 16px;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
             max-height: 90vh;
             overflow: hidden;
-            transform: scale(0.95);
-            transition: transform 0.3s ease;
+            transform: scale(0.95) translateY(8px);
+            transition: transform 0.25s ease;
         }
 
         .modal-overlay.open .modal-sheet {
-            transform: scale(1);
+            transform: scale(1) translateY(0);
         }
 
         .modal-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 20px 24px;
+            padding: 18px 24px;
             border-bottom: 1px solid #e5e7eb;
+            background: #fafafc;
         }
 
         .modal-header h3 {
-            margin: 0;
-            font-size: 1.125rem;
+            font-size: 1.1rem;
             font-weight: 600;
-            color: #1e1e2a;
+            color: #0f172a;
+            margin: 0;
         }
 
         .modal-close {
@@ -306,15 +516,15 @@
             border: none;
             font-size: 1.8rem;
             cursor: pointer;
-            color: #6b7280;
-            padding: 4px 8px;
+            color: #64748b;
+            padding: 0 6px;
             border-radius: 6px;
             transition: background 0.15s;
+            line-height: 1;
         }
 
         .modal-close:hover {
-            background: #f3f4f6;
-            color: #1e1e2a;
+            background: #f1f5f9;
         }
 
         .modal-body {
@@ -329,39 +539,70 @@
             display: flex;
             justify-content: flex-end;
             gap: 10px;
+            background: #fafafc;
         }
 
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
 
         .form-group label {
             display: block;
             font-weight: 500;
-            font-size: 0.9rem;
-            color: #1e1e2a;
-            margin-bottom: 6px;
+            font-size: 0.85rem;
+            color: #0f172a;
+            margin-bottom: 4px;
         }
 
-        .form-group textarea {
+        .form-group .asset-display {
+            padding: 10px 14px;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-weight: 500;
+            color: #0f172a;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group .asset-display .material-symbols-outlined {
+            color: #64748b;
+        }
+
+        .form-group textarea,
+        .form-group input[type="text"],
+        .form-group input[type="date"] {
             width: 100%;
             padding: 10px 14px;
             border: 1px solid #d1d5db;
             border-radius: 8px;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-family: inherit;
+            transition: border 0.15s, box-shadow 0.15s;
+        }
+
+        .form-group textarea {
             resize: vertical;
             min-height: 80px;
         }
 
-        .form-group textarea:focus {
+        .form-group textarea:focus,
+        .form-group input:focus {
             outline: none;
             border-color: #dc2626;
-            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+
+        .form-hint {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 4px;
         }
 
         .btn {
-            padding: 10px 24px;
+            padding: 9px 24px;
             border: none;
             border-radius: 8px;
             font-weight: 500;
@@ -369,6 +610,9 @@
             cursor: pointer;
             transition: all 0.15s ease;
             min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .btn-primary {
@@ -381,20 +625,15 @@
         }
 
         .btn-secondary {
-            background: #f3f4f6;
-            color: #1e1e2a;
+            background: #f1f5f9;
+            color: #0f172a;
         }
 
         .btn-secondary:hover {
-            background: #e5e7eb;
+            background: #e2e8f0;
         }
 
-        @media (max-width: 1024px) {
-            .request-container {
-                grid-template-columns: 1fr;
-            }
-        }
-
+        /* ── Alerts ── */
         .alert {
             padding: 12px 16px;
             border-radius: 8px;
@@ -402,6 +641,7 @@
             display: flex;
             align-items: flex-start;
             gap: 10px;
+            font-size: 0.9rem;
         }
 
         .alert-success {
@@ -417,19 +657,265 @@
         }
 
         .alert .material-symbols-outlined {
-            font-size: 18px;
+            font-size: 20px;
             flex-shrink: 0;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .page-header {
+                flex-direction: column;
+            }
+
+            .stats-row {
+                gap: 16px;
+            }
+
+            .stat-item {
+                font-size: 0.8rem;
+            }
+
+            .panel-header {
+                padding: 12px 14px;
+            }
+
+            .panel-body {
+                padding: 12px 14px 16px;
+            }
+
+            .asset-catalog-item {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .asset-catalog-item .btn-request-sm {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .search-filter-bar {
+                flex-direction: column;
+            }
+
+            .search-filter-bar .filter-select {
+                width: 100%;
+            }
+
+            .modal-sheet {
+                max-width: 95%;
+                margin: 10px;
+            }
+
+            .modal-header {
+                padding: 14px 16px;
+            }
+
+            .modal-body {
+                padding: 16px;
+            }
+
+            .modal-footer {
+                padding: 12px 16px;
+                flex-direction: column;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
 <main id="main-content" layout:fragment="content">
 
+    <!-- ═══ PAGE HEADER WITH STATS ═══ -->
+    <div class="page-header">
+        <div>
+            <h1>Asset Requests</h1>
+            <p class="subtitle">Browse available assets and track your requests</p>
+        </div>
+    </div>
+
+    <!-- ═══ FLASH MESSAGES ═══ -->
+    <th:block th:if="${successMessage}">
+        <div class="alert alert-success">
+            <span class="material-symbols-outlined">check_circle</span>
+            <span th:text="${successMessage}"></span>
+        </div>
+    </th:block>
+    <th:block th:if="${errorMessage}">
+        <div class="alert alert-error">
+            <span class="material-symbols-outlined">error</span>
+            <span th:text="${errorMessage}"></span>
+        </div>
+    </th:block>
+
+    <!-- ═══ TWO-COLUMN CATALOG ═══ -->
+    <div class="catalog-grid">
+
+        <!-- ─── AVAILABLE ASSETS CATALOG ─── -->
+        <div class="catalog-panel">
+            <div class="panel-header">
+                <h2>
+                    <span class="material-symbols-outlined" style="font-size:20px;">inventory_2</span>
+                    Available Assets
+                </h2>
+                <span class="count-badge" th:text="${#lists.size(availableAssets)} + ' available'">0 available</span>
+            </div>
+            <div class="panel-body">
+                <!-- Search & Filter -->
+                <div class="search-filter-bar">
+                    <div class="search-wrap">
+                        <span class="material-symbols-outlined">search</span>
+                        <input type="text" id="asset-search" placeholder="Search assets..." oninput="filterAssets()">
+                    </div>
+                    <select class="filter-select" id="category-filter" onchange="filterAssets()">
+                        <option value="">All Categories</option>
+                        <option th:each="cat : ${categories}" th:value="${cat}" th:text="${cat}">Category</option>
+                    </select>
+                </div>
+
+                <!-- Asset Catalog -->
+                <div th:if="${#lists.isEmpty(availableAssets)}" class="empty-state">
+                    <span class="material-symbols-outlined">inbox</span>
+                    <p>No assets available to request</p>
+                </div>
+                <div th:unless="${#lists.isEmpty(availableAssets)}" class="asset-catalog" id="asset-catalog">
+                    <div th:each="asset : ${availableAssets}" class="asset-catalog-item"
+                         th:data-asset-id="${asset.id}"
+                         th:data-asset-name="${asset.name}"
+                         th:data-asset-category="${asset.category}">
+                        <div class="asset-icon">
+                            <span class="material-symbols-outlined">inventory_2</span>
+                        </div>
+                        <div class="asset-info">
+                            <div class="name" th:text="${asset.name}">Asset Name</div>
+                            <div class="meta">
+                                <span>
+                                    <span class="material-symbols-outlined">category</span>
+                                    <span th:text="${asset.category}">Category</span>
+                                </span>
+                                <span th:if="${asset.serialNumber}">
+                                    <span class="material-symbols-outlined">tag</span>
+                                    <span th:text="${asset.serialNumber}">SN</span>
+                                </span>
+                                <span th:if="${asset.purchaseCost}">
+                                    <span class="material-symbols-outlined">sell</span>
+                                    ₦<span th:text="${#numbers.formatDecimal(asset.purchaseCost, 1, 2)}">0.00</span>
+                                </span>
+                            </div>
+                        </div>
+                        <span class="asset-status available" th:if="${asset.quantityAvailable > 0}">Available</span>
+                        <span class="asset-status limited" th:unless="${asset.quantityAvailable > 0}">Limited</span>
+                        <button class="btn-request-sm" onclick="openRequestModal(this)" th:data-asset-id="${asset.id}" th:data-asset-name="${asset.name}">
+                            <span class="material-symbols-outlined">add</span>
+                            Request
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── MY REQUESTS ─── -->
+        <div class="catalog-panel">
+            <div class="panel-header">
+                <h2>
+                    <span class="material-symbols-outlined" style="font-size:20px;">pending_actions</span>
+                    My Requests
+                </h2>
+                <span class="count-badge" th:text="${#lists.size(myRequests)} + ' total'">0 total</span>
+            </div>
+            <div class="panel-body">
+                <div th:if="${#lists.isEmpty(myRequests)}" class="empty-state">
+                    <span class="material-symbols-outlined">mail_outline</span>
+                    <p>No requests yet</p>
+                    <p style="font-size:0.85rem; margin-top:4px;">Browse available assets and submit your first request</p>
+                </div>
+                <div th:unless="${#lists.isEmpty(myRequests)}" class="requests-list">
+                    <div th:each="request : ${myRequests}" class="request-card" th:class="'request-card ' + ${request.status.name().toLowerCase()}">
+                        <div class="request-top">
+                            <div class="asset-name" th:text="${request.asset.name}">Asset Name</div>
+                            <span class="status-badge" th:class="'status-badge ' + ${request.status.name().toLowerCase()}">
+                                <span th:text="${request.status.name()}">PENDING</span>
+                            </span>
+                        </div>
+                        <div class="request-meta">
+                            <span>
+                                <span class="material-symbols-outlined">schedule</span>
+                                <span th:text="${#temporals.format(request.requestedAt, 'MMM dd, yyyy')}"></span>
+                            </span>
+                            <span th:if="${request.status.name() == 'APPROVED'}">
+                                <span class="material-symbols-outlined" style="color:#059669;">check_circle</span>
+                                <span>Approved <span th:if="${request.approvedAt}" th:text="'on ' + ${#temporals.format(request.approvedAt, 'MMM dd')}"></span></span>
+                            </span>
+                            <span th:if="${request.status.name() == 'REJECTED'}">
+                                <span class="material-symbols-outlined" style="color:#dc2626;">cancel</span>
+                                <span>Rejected <span th:if="${request.approvedAt}" th:text="'on ' + ${#temporals.format(request.approvedAt, 'MMM dd')}"></span></span>
+                            </span>
+                        </div>
+                        <div th:if="${request.reason}" class="request-reason" th:text="${request.reason}">Reason</div>
+                        <div th:if="${request.status.name() == 'APPROVED' and request.approvalNotes}" class="request-notes approved-note">
+                            <strong>✓</strong> <span th:text="${request.approvalNotes}"></span>
+                        </div>
+                        <div th:if="${request.status.name() == 'REJECTED' and request.approvalNotes}" class="request-notes rejected-note">
+                            <strong>✗</strong> <span th:text="${request.approvalNotes}"></span>
+                        </div>
+                        <div th:if="${request.status.name() == 'PENDING'}" class="request-actions">
+                            <form th:action="@{/employee/asset-requests/{id}/cancel(id=${request.id})}" method="post">
+                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <button type="submit" class="btn-cancel-sm" onclick="return confirm('Cancel this request?')">Cancel Request</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ REQUEST MODAL ═══ -->
+    <div id="request-modal" class="modal-overlay">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <h3>Request Asset</h3>
+                <button type="button" class="modal-close" onclick="closeRequestModal()">&times;</button>
+            </div>
+            <form id="request-form" method="post" th:action="@{/employee/asset-requests}">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Selected Asset</label>
+                        <div class="asset-display">
+                            <span class="material-symbols-outlined">inventory_2</span>
+                            <span id="modal-asset-name">—</span>
+                        </div>
+                        <input type="hidden" id="modal-asset-id" name="assetId">
+                    </div>
+                    <div class="form-group">
+                        <label for="reason">Reason for Request <span style="color:#ef4444;">*</span></label>
+                        <textarea id="reason" name="reason" placeholder="Why do you need this asset? (e.g., project work, replacement, new hire, etc.)" required></textarea>
+                        <div class="form-hint">Be specific about how this asset will be used</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="request-date">Date Needed</label>
+                        <input type="date" id="request-date" name="dateNeeded" th:value="${#temporals.format(#temporals.createToday(), 'yyyy-MM-dd')}">
+                        <div class="form-hint">When do you need this asset by?</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeRequestModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══ SCRIPTS ═══ -->
     <script>
+        // ── Modal functions ──
         function openRequestModal(button) {
             const assetId = button.dataset.assetId;
             const assetName = button.dataset.assetName;
-
             document.getElementById('modal-asset-id').value = assetId;
             document.getElementById('modal-asset-name').textContent = assetName;
             document.getElementById('reason').value = '';
@@ -440,11 +926,9 @@
             document.getElementById('request-modal').classList.remove('open');
         }
 
-        // Close modal when clicking outside
+        // Close modal on backdrop click
         document.getElementById('request-modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeRequestModal();
-            }
+            if (e.target === this) closeRequestModal();
         });
 
         // Close modal with Escape key
@@ -453,149 +937,49 @@
                 closeRequestModal();
             }
         });
+
+        // ── Asset search and filter ──
+        function filterAssets() {
+            const query = document.getElementById('asset-search').value.trim().toLowerCase();
+            const category = document.getElementById('category-filter').value;
+            const items = document.querySelectorAll('.asset-catalog-item');
+            let visible = 0;
+
+            items.forEach(item => {
+                const name = item.dataset.assetName?.toLowerCase() || '';
+                const itemCategory = item.dataset.assetCategory || '';
+                const matchName = name.includes(query);
+                const matchCategory = !category || itemCategory === category;
+                const show = matchName && matchCategory;
+                item.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            // Show/hide empty message
+            const catalog = document.getElementById('asset-catalog');
+            let noResult = catalog.querySelector('.no-result-message');
+            if (visible === 0) {
+                if (!noResult) {
+                    const msg = document.createElement('div');
+                    msg.className = 'empty-state no-result-message';
+                    msg.innerHTML = '<span class="material-symbols-outlined">search_off</span><p>No assets match your search</p>';
+                    catalog.appendChild(msg);
+                }
+            } else {
+                if (noResult) noResult.remove();
+            }
+        }
+
+        // ── Initialise: set default date ──
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateInput = document.getElementById('request-date');
+            if (dateInput && !dateInput.value) {
+                const today = new Date().toISOString().split('T')[0];
+                dateInput.value = today;
+            }
+        });
     </script>
-    <div class="max-w-7xl space-y-6" style="max-width: 1400px; margin: 0 auto; padding: 0 16px; display: flex; flex-direction: column; gap: 24px;">
-        <!-- Header -->
-        <div class="flex items-center justify-between" style="display: flex; align-items: center; justify-content: space-between;">
-            <h1 style="font-size: 2rem; font-weight: bold; margin: 0; color: #1e1e2a;">Asset Requests</h1>
-        </div>
 
-        <!-- Messages -->
-        <th:block th:if="${successMessage}">
-            <div class="alert alert-success">
-                <span class="material-symbols-outlined">check_circle</span>
-                <span th:text="${successMessage}"></span>
-            </div>
-        </th:block>
-        <th:block th:if="${errorMessage}">
-            <div class="alert alert-error">
-                <span class="material-symbols-outlined">error</span>
-                <span th:text="${errorMessage}"></span>
-            </div>
-        </th:block>
-
-        <!-- Two-Column Layout -->
-        <div class="request-container">
-            <!-- Available Assets -->
-            <div class="section">
-                <div class="section-header">
-                    <h2>
-                        <span class="material-symbols-outlined" style="font-size: 20px;">inventory_2</span>
-                        Available Assets
-                    </h2>
-                </div>
-                <div class="section-body">
-                    <div th:if="${#lists.isEmpty(availableAssets)}" class="empty-state">
-                        <span class="material-symbols-outlined">inbox</span>
-                        <p>No assets available to request</p>
-                    </div>
-                    <div th:unless="${#lists.isEmpty(availableAssets)}" class="available-assets-grid">
-                        <div th:each="asset : ${availableAssets}" class="asset-card" th:data-asset-id="${asset.id}">
-                            <div class="asset-card-header">
-                                <div class="asset-icon">
-                                    <span class="material-symbols-outlined" style="font-size: 24px; color: #6b7280;">inventory_2</span>
-                                </div>
-                                <div class="asset-card-title" th:text="${asset.name}">Asset Name</div>
-                            </div>
-                            <div class="asset-card-meta">
-                                <span>
-                                    <span class="material-symbols-outlined" style="font-size: 16px;">category</span>
-                                    <span th:text="${asset.category}">Category</span>
-                                </span>
-                                <span>
-                                    <span class="material-symbols-outlined" style="font-size: 16px;">sell</span>
-                                    <span th:if="${asset.purchaseCost}">₦<span th:text="${#numbers.formatDecimal(asset.purchaseCost, 1, 2)}">0.00</span></span>
-                                    <span th:unless="${asset.purchaseCost}">N/A</span>
-                                </span>
-                            </div>
-                            <button type="button" class="btn-request" onclick="openRequestModal(this)" th:data-asset-id="${asset.id}" th:data-asset-name="${asset.name}">
-                                <span class="material-symbols-outlined" style="display: inline; font-size: 16px; vertical-align: middle;">add_circle</span>
-                                Request
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- My Requests -->
-            <div class="section">
-                <div class="section-header">
-                    <h2>
-                        <span class="material-symbols-outlined" style="font-size: 20px;">pending_actions</span>
-                        My Requests
-                        <span class="badge" th:if="${pendingCount > 0}" th:text="${pendingCount}">0</span>
-                    </h2>
-                </div>
-                <div class="section-body">
-                    <div th:if="${#lists.isEmpty(myRequests)}" class="empty-state">
-                        <span class="material-symbols-outlined">mail_outline</span>
-                        <p>No requests yet</p>
-                    </div>
-                    <div th:unless="${#lists.isEmpty(myRequests)}" class="requests-list">
-                        <div th:each="request : ${myRequests}" class="request-item" th:class="'request-item ' + ${request.status.name().toLowerCase()}">
-                            <div class="request-header">
-                                <div class="request-asset-name" th:text="${request.asset.name}">Asset Name</div>
-                                <div class="request-status" th:class="'request-status ' + ${request.status.name().toLowerCase()}">
-                                    <span th:text="${request.status.name()}">PENDING</span>
-                                </div>
-                            </div>
-                            <div class="request-date">
-                                <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">schedule</span>
-                                <span th:text="${#temporals.format(request.requestedAt, 'MMM dd, yyyy HH:mm')}"></span>
-                            </div>
-                            <div th:if="${request.reason}" class="request-reason">
-                                <strong>Reason:</strong> <span th:text="${request.reason}"></span>
-                            </div>
-                            <div th:if="${request.status.name() == 'APPROVED'}" style="padding: 8px; background: #d1fae5; border-radius: 4px; margin-bottom: 10px; color: #065f46; font-size: 0.85rem;">
-                                <strong>✓ Approved:</strong> <span th:text="${#temporals.format(request.approvedAt, 'MMM dd, yyyy')}"></span>
-                                <div th:if="${request.approvalNotes}" style="margin-top: 4px;" th:text="${request.approvalNotes}"></div>
-                            </div>
-                            <div th:if="${request.status.name() == 'REJECTED'}" style="padding: 8px; background: #fee2e2; border-radius: 4px; margin-bottom: 10px; color: #991b1b; font-size: 0.85rem;">
-                                <strong>✗ Rejected:</strong> <span th:text="${#temporals.format(request.approvedAt, 'MMM dd, yyyy')}"></span>
-                                <div th:if="${request.approvalNotes}" style="margin-top: 4px;" th:text="${request.approvalNotes}"></div>
-                            </div>
-                            <div th:if="${request.status.name() == 'PENDING'}" class="request-actions">
-                                <form th:action="@{/employee/asset-requests/{id}/cancel(id=${request.id})}" method="post" style="flex: 1;">
-                                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                                    <button type="submit" class="btn-small btn-cancel" onclick="return confirm('Cancel this request?')">Cancel</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Request Modal -->
-    <div id="request-modal" class="modal-overlay">
-        <div class="modal-sheet">
-            <div class="modal-header">
-                <h3>Request Asset</h3>
-                <button type="button" class="modal-close" onclick="closeRequestModal()">&times;</button>
-            </div>
-            <form id="request-form" method="post" th:action="@{/employee/asset-requests}">
-                <!-- CSRF token for Spring Security (if enabled) -->
-                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label>Asset</label>
-                        <div style="padding: 10px 14px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 500; color: #1e1e2a;" id="modal-asset-name"></div>
-                        <input type="hidden" id="modal-asset-id" name="assetId">
-                    </div>
-                    <div class="form-group">
-                        <label for="reason">Reason for Request</label>
-                        <textarea id="reason" name="reason" placeholder="Why do you need this asset?" required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeRequestModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Submit Request</button>
-                </div>
-            </form>
-        </div>
-    </div>
 </main>
 </body>
 </html>
-

@@ -1,57 +1,385 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layouts/app}">
 <head>
-    <title>Asset Requests - Approval | Asset Manager | JustJava FAMS</title>
+    <title>Request Approvals | JustJava FAMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        /* ── Reset & base ── */
+        * { box-sizing: border-box; }
 
-        .page-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 16px;
-        }
-
+        /* ── Page header with stats ── */
         .page-header {
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            margin-bottom: 32px;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
         .page-header h1 {
-            font-size: 2rem;
-            font-weight: bold;
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 28px;
+            color: #0f172a;
             margin: 0;
-            color: #1e1e2a;
             display: flex;
             align-items: center;
             gap: 12px;
+            letter-spacing: -0.02em;
         }
 
-        .header-icon {
-            font-size: 28px;
-            color: #3b82f6;
+        .page-header .subtitle {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 18px;
+            margin-top: 4px;
         }
 
-        .badge-large {
-            background: #3b82f6;
-            color: white;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.875rem;
+        .stats-row {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 18px;
+            color: #475569;
+        }
+
+        .stat-item .number {
             font-weight: 600;
+            font-size: 13px;
+            line-height: 18px;
+            color: #0f172a;
         }
 
+        .stat-item .number.pending { color: #d97706; }
+
+        /* ── Search & filter bar ── */
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .toolbar .search-wrap {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .toolbar .search-wrap input {
+            width: 100%;
+            height: 38px;
+            padding: 0 12px 0 38px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 18px;
+            background: white;
+            transition: border 0.15s, box-shadow 0.15s;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .toolbar .search-wrap input:focus {
+            outline: none;
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+
+        .toolbar .search-wrap .material-symbols-outlined {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 20px;
+        }
+
+        .toolbar .filter-select {
+            height: 38px;
+            padding: 0 32px 0 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 18px;
+            background: white;
+            color: #0f172a;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            min-width: 140px;
+            cursor: pointer;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .toolbar .filter-select:focus {
+            outline: none;
+            border-color: #dc2626;
+        }
+
+        .toolbar .clear-btn {
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 18px;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 4px 8px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .toolbar .clear-btn:hover {
+            color: #0f172a;
+        }
+
+        /* ── Table container ── */
+        .table-container {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 18px;
+        }
+
+        thead {
+            background: #f8fafc;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            text-align: left;
+            padding: 14px 16px;
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 11px;
+            line-height: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 18px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background: #fafafc;
+        }
+
+        /* ── Asset name with icon ── */
+        .asset-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .asset-icon {
+            width: 32px;
+            height: 32px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .asset-icon .material-symbols-outlined {
+            font-size: 18px;
+            color: #64748b;
+        }
+
+        .asset-name {
+            font-weight: 500;
+            font-size: 13px;
+            line-height: 18px;
+            color: #0f172a;
+        }
+
+        /* ── Requester cell ── */
+        .requester-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .requester-avatar {
+            width: 28px;
+            height: 28px;
+            background: #e2e8f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 14px;
+            color: #475569;
+            flex-shrink: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* ── Category badge ── */
+        .category-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            background: #f1f5f9;
+            color: #475569;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            line-height: 14px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* ── Reason cell ── */
+        .reason-cell {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 18px;
+        }
+
+        .reason-cell:hover {
+            white-space: normal;
+            overflow: visible;
+            background: white;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        /* ── Action buttons ── */
+        .action-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 11px;
+            line-height: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .btn-approve {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-approve:hover {
+            background: #059669;
+        }
+
+        .btn-reject {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .btn-reject:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-action .material-symbols-outlined {
+            font-size: 16px;
+        }
+
+        /* ── Empty state ── */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .empty-state .material-symbols-outlined {
+            font-size: 56px;
+            color: #d1d5db;
+            display: block;
+            margin: 0 auto 16px;
+        }
+
+        .empty-state h3 {
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 20px;
+            color: #0f172a;
+            margin: 0 0 8px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .empty-state p {
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 18px;
+            color: #475569;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* ── Alert messages ── */
         .alert {
             padding: 12px 16px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             display: flex;
             align-items: flex-start;
             gap: 10px;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 18px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         .alert-success {
@@ -67,197 +395,23 @@
         }
 
         .alert .material-symbols-outlined {
-            font-size: 18px;
+            font-size: 20px;
             flex-shrink: 0;
-            margin-top: 2px;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #6b7280;
-        }
-
-        .empty-state .material-symbols-outlined {
-            font-size: 64px;
-            color: #d1d5db;
-            margin-bottom: 12px;
-        }
-
-        .requests-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            gap: 20px;
-        }
-
-        .request-card {
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-            transition: all 0.3s;
-        }
-
-        .request-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            border-color: #3b82f6;
-        }
-
-        .request-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-            margin-bottom: 16px;
-            gap: 10px;
-        }
-
-        .request-card-title {
-            flex: 1;
-        }
-
-        .asset-name {
-            font-weight: 600;
-            color: #1e1e2a;
-            font-size: 1rem;
-            margin-bottom: 4px;
-        }
-
-        .requester-info {
-            font-size: 0.85rem;
-            color: #6b7280;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .request-meta {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-            padding: 12px;
-            background: #f9fafb;
-            border-radius: 8px;
-        }
-
-        .meta-item {
-            font-size: 0.8rem;
-        }
-
-        .meta-label {
-            color: #6b7280;
-            margin-bottom: 2px;
-        }
-
-        .meta-value {
-            color: #1e1e2a;
-            font-weight: 500;
-        }
-
-        .reason-section {
-            margin-bottom: 16px;
-        }
-
-        .reason-label {
-            font-size: 0.8rem;
-            color: #6b7280;
-            font-weight: 500;
-            margin-bottom: 6px;
-        }
-
-        .reason-text {
-            font-size: 0.85rem;
-            color: #374151;
-            padding: 10px;
-            background: #f9fafb;
-            border-radius: 6px;
-            border-left: 3px solid #3b82f6;
-            max-height: 80px;
-            overflow-y: auto;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: 500;
-            font-size: 0.85rem;
-            color: #1e1e2a;
-            margin-bottom: 6px;
-        }
-
-        .form-group textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 70px;
-        }
-
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 16px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 10px 14px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.15s;
-            min-height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .btn-approve {
-            background: #10b981;
-            color: white;
-        }
-
-        .btn-approve:hover {
-            background: #059669;
-        }
-
-        .btn-reject {
-            background: #f3f4f6;
-            color: #1e1e2a;
-        }
-
-        .btn-reject:hover {
-            background: #e5e7eb;
-        }
-
+        /* ── Modal ── */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(3px);
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
             z-index: 100;
             display: flex;
             justify-content: center;
             align-items: center;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
         }
 
         .modal-overlay.open {
@@ -269,33 +423,36 @@
             background: white;
             width: 100%;
             max-width: 500px;
-            border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
             max-height: 90vh;
             overflow: hidden;
-            transform: scale(0.95);
-            transition: transform 0.3s ease;
+            transform: scale(0.95) translateY(8px);
+            transition: transform 0.25s ease;
         }
 
         .modal-overlay.open .modal-sheet {
-            transform: scale(1);
+            transform: scale(1) translateY(0);
         }
 
         .modal-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 20px 24px;
+            padding: 18px 24px;
             border-bottom: 1px solid #e5e7eb;
+            background: #fafafc;
         }
 
         .modal-header h3 {
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 20px;
+            color: #0f172a;
             margin: 0;
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: #1e1e2a;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         .modal-close {
@@ -303,15 +460,15 @@
             border: none;
             font-size: 1.8rem;
             cursor: pointer;
-            color: #6b7280;
-            padding: 4px 8px;
+            color: #64748b;
+            padding: 0 6px;
             border-radius: 6px;
             transition: background 0.15s;
+            line-height: 1;
         }
 
         .modal-close:hover {
-            background: #f3f4f6;
-            color: #1e1e2a;
+            background: #f1f5f9;
         }
 
         .modal-body {
@@ -326,144 +483,303 @@
             display: flex;
             justify-content: flex-end;
             gap: 10px;
+            background: #fafafc;
         }
 
-        .modal-btn {
-            padding: 10px 24px;
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            font-size: 12px;
+            line-height: 16px;
+            color: #0f172a;
+            margin-bottom: 4px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .form-group .info-display {
+            padding: 10px 14px;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-weight: 400;
+            font-size: 13px;
+            line-height: 18px;
+            color: #0f172a;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 18px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            resize: vertical;
+            min-height: 80px;
+            transition: border 0.15s, box-shadow 0.15s;
+        }
+
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+
+        .form-group textarea::placeholder {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        .btn {
+            padding: 9px 24px;
             border: none;
             border-radius: 8px;
             font-weight: 500;
-            font-size: 0.9rem;
+            font-size: 13px;
+            line-height: 18px;
             cursor: pointer;
-            transition: all 0.15s;
+            transition: all 0.15s ease;
             min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
-        .modal-btn-primary {
-            background: #3b82f6;
+        .btn-primary {
+            background: #dc2626;
             color: white;
         }
 
-        .modal-btn-primary:hover {
-            background: #2563eb;
+        .btn-primary:hover {
+            background: #b91c1c;
         }
 
-        .modal-btn-secondary {
-            background: #f3f4f6;
-            color: #1e1e2a;
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #0f172a;
         }
 
-        .modal-btn-secondary:hover {
-            background: #e5e7eb;
+        .btn-secondary:hover {
+            background: #e2e8f0;
         }
 
-        .modal-btn.approve {
+        .btn-success {
             background: #10b981;
+            color: white;
         }
 
-        .modal-btn.approve:hover {
+        .btn-success:hover {
             background: #059669;
         }
 
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* ── Responsive ── */
         @media (max-width: 768px) {
-            .requests-grid {
-                grid-template-columns: 1fr;
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
             }
 
-            .request-meta {
-                grid-template-columns: 1fr;
+            .stats-row {
+                gap: 16px;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .toolbar .search-wrap {
+                min-width: auto;
+            }
+
+            .toolbar .filter-select {
+                width: 100%;
+            }
+
+            td, th {
+                padding: 10px 12px;
+            }
+
+            .reason-cell {
+                max-width: 120px;
+            }
+
+            .action-group {
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .btn-action {
+                justify-content: center;
+                width: 100%;
+            }
+
+            .modal-sheet {
+                max-width: 95%;
+                margin: 10px;
+            }
+
+            .modal-header, .modal-body, .modal-footer {
+                padding: 14px 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .asset-cell .asset-icon {
+                display: none;
+            }
+            .requester-cell .requester-avatar {
+                display: none;
+            }
+            .reason-cell {
+                max-width: 80px;
             }
         }
     </style>
 </head>
 <body>
 <main id="main-content" layout:fragment="content">
-    <div class="page-container">
-        <!-- Header -->
-        <div class="page-header">
+
+    <!-- ═══ PAGE HEADER WITH STATS ═══ -->
+    <div class="page-header">
+        <div>
             <h1>
-                <span class="material-symbols-outlined header-icon">check_circle</span>
                 Request Approvals
-                <span class="badge-large" id="pending-count" th:text="${pendingCount}">0</span>
             </h1>
+            <p class="subtitle">Review and manage pending asset requests</p>
         </div>
-
-        <!-- Messages -->
-        <th:block th:if="${successMessage}">
-            <div class="alert alert-success">
-                <span class="material-symbols-outlined">check_circle</span>
-                <span th:text="${successMessage}"></span>
-            </div>
-        </th:block>
-        <th:block th:if="${errorMessage}">
-            <div class="alert alert-error">
-                <span class="material-symbols-outlined">error</span>
-                <span th:text="${errorMessage}"></span>
-            </div>
-        </th:block>
-
-        <!-- Empty State -->
-        <div th:if="${#lists.isEmpty(pendingRequests)}" class="empty-state">
-            <span class="material-symbols-outlined">inbox</span>
-            <h2 style="font-size: 1.25rem; color: #1e1e2a; margin-bottom: 8px;">No Pending Requests</h2>
-            <p>All asset requests have been reviewed. Great work!</p>
-        </div>
-
-        <!-- Requests Grid -->
-        <div th:unless="${#lists.isEmpty(pendingRequests)}" class="requests-grid">
-            <div th:each="request : ${pendingRequests}" class="request-card">
-                <!-- Card Header -->
-                <div class="request-card-header">
-                    <div class="request-card-title">
-                        <div class="asset-name" th:text="${request.asset.name}">Asset Name</div>
-                        <div class="requester-info">
-                            <span class="material-symbols-outlined" style="font-size: 16px;">person</span>
-                            <span th:text="${request.requestedByName}">Employee Name</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Meta Information -->
-                <div class="request-meta">
-                    <div class="meta-item">
-                        <div class="meta-label">Category</div>
-                        <div class="meta-value" th:text="${request.asset.category}">Category</div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">Requested Date</div>
-                        <div class="meta-value" th:text="${#temporals.format(request.requestedAt, 'MMM dd, yyyy')}">Jan 01, 2024</div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">Asset Code</div>
-                        <div class="meta-value" th:text="${request.asset.assetCode}">AST-0001</div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">Asset Value</div>
-                    </div>
-                </div>
-
-                <!-- Reason Section -->
-                <div class="reason-section" th:if="${request.reason}">
-                    <div class="reason-label">Request Reason</div>
-                    <div class="reason-text" th:text="${request.reason}">Employee reason for requesting this asset</div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="button-group">
-                    <button class="btn btn-approve" onclick="openApproveModal(this)" th:data-request-id="${request.id}" th:data-asset-name="${request.asset.name}" th:data-requester="${request.requestedByName}">
-                        <span class="material-symbols-outlined" style="font-size: 18px;">check_circle</span>
-                        Approve
-                    </button>
-                    <button class="btn btn-reject" onclick="openRejectModal(this)" th:data-request-id="${request.id}" th:data-asset-name="${request.asset.name}" th:data-requester="${request.requestedByName}">
-                        <span class="material-symbols-outlined" style="font-size: 18px;">cancel</span>
-                        Reject
-                    </button>
-                </div>
+        <div class="stats-row">
+            <div class="stat-item">
+                <span class="material-symbols-outlined" style="font-size:20px; color:#94a3b8;">pending</span>
+                <span>Pending: <span class="number pending" th:text="${pendingCount}">0</span></span>
             </div>
         </div>
     </div>
 
-    <!-- Approve Modal -->
+    <!-- ═══ FLASH MESSAGES ═══ -->
+    <th:block th:if="${successMessage}">
+        <div class="alert alert-success">
+            <span class="material-symbols-outlined">check_circle</span>
+            <span th:text="${successMessage}"></span>
+        </div>
+    </th:block>
+    <th:block th:if="${errorMessage}">
+        <div class="alert alert-error">
+            <span class="material-symbols-outlined">error</span>
+            <span th:text="${errorMessage}"></span>
+        </div>
+    </th:block>
+
+    <!-- ═══ TOOLBAR: Search + Filter ═══ -->
+    <div class="toolbar">
+        <div class="search-wrap">
+            <span class="material-symbols-outlined">search</span>
+            <input type="text" id="table-search" placeholder="Search assets, locations, or personnel…" oninput="filterTable()">
+        </div>
+        <select class="filter-select" id="category-filter" onchange="filterTable()">
+            <option value="">All Categories</option>
+            <option th:each="cat : ${categories}" th:value="${cat}" th:text="${cat}">Category</option>
+        </select>
+        <button class="clear-btn" onclick="clearFilters()">Clear filters</button>
+    </div>
+
+    <!-- ═══ TABLE ═══ -->
+    <div class="table-container">
+        <div class="table-scroll">
+            <table id="requests-table">
+                <thead>
+                <tr>
+                    <th>Asset</th>
+                    <th>Requester</th>
+                    <th>Category</th>
+                    <th>Requested</th>
+                    <th>Reason</th>
+                    <th style="text-align:right;">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- Empty state -->
+                <tr th:if="${#lists.isEmpty(pendingRequests)}">
+                    <td colspan="6" style="padding:0;">
+                        <div class="empty-state">
+                            <span class="material-symbols-outlined">inbox</span>
+                            <h3>No Pending Requests</h3>
+                            <p>All asset requests have been reviewed. Great work!</p>
+                        </div>
+                    </td>
+                </tr>
+                <!-- Data rows -->
+                <tr th:each="request : ${pendingRequests}" th:unless="${#lists.isEmpty(pendingRequests)}"
+                    class="request-row"
+                    th:data-asset="${request.asset.name}"
+                    th:data-requester="${request.requestedByName}"
+                    th:data-reason="${request.reason}"
+                    th:data-category="${request.asset.category}">
+                    <td>
+                        <div class="asset-cell">
+                            <div class="asset-icon">
+                                <span class="material-symbols-outlined">inventory_2</span>
+                            </div>
+                            <span class="asset-name" th:text="${request.asset.name}">Asset Name</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="requester-cell">
+                            <div class="requester-avatar" th:text="${#strings.substring(request.requestedByName, 0, 1)}">A</div>
+                            <span th:text="${request.requestedByName}">Requester</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="category-badge" th:text="${request.asset.category}">Category</span>
+                    </td>
+                    <td>
+                        <span th:text="${#temporals.format(request.requestedAt, 'MMM dd, yyyy')}">Jan 01, 2024</span>
+                    </td>
+                    <td>
+                        <div class="reason-cell" th:text="${request.reason ?: 'No reason provided'}">Reason</div>
+                    </td>
+                    <td style="text-align:right;">
+                        <div class="action-group" style="justify-content:flex-end;">
+                            <button class="btn-action btn-approve" onclick="openApproveModal(this)"
+                                    th:data-request-id="${request.id}"
+                                    th:data-asset-name="${request.asset.name}"
+                                    th:data-requester="${request.requestedByName}">
+                                <span class="material-symbols-outlined">check_circle</span>
+                                Approve
+                            </button>
+                            <button class="btn-action btn-reject" onclick="openRejectModal(this)"
+                                    th:data-request-id="${request.id}"
+                                    th:data-asset-name="${request.asset.name}"
+                                    th:data-requester="${request.requestedByName}">
+                                <span class="material-symbols-outlined">cancel</span>
+                                Reject
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ═══ APPROVE MODAL ═══ -->
     <div id="approve-modal" class="modal-overlay">
         <div class="modal-sheet">
             <div class="modal-header">
@@ -471,31 +787,30 @@
                 <button type="button" class="modal-close" onclick="closeModal('approve-modal')">&times;</button>
             </div>
             <form id="approve-form" method="post" th:action="@{/asset-manager/asset-requests/1/approve}">
-                <!-- CSRF token for Spring Security (if enabled) -->
                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>Asset Requested</label>
-                        <div style="padding: 10px 14px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 500; color: #1e1e2a;" id="approve-asset-name"></div>
+                        <label>Asset</label>
+                        <div class="info-display" id="approve-asset-name">—</div>
                     </div>
                     <div class="form-group">
                         <label>Requested By</label>
-                        <div style="padding: 10px 14px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 500; color: #1e1e2a;" id="approve-requester"></div>
+                        <div class="info-display" id="approve-requester">—</div>
                     </div>
                     <div class="form-group">
                         <label for="approve-notes">Approval Notes (Optional)</label>
-                        <textarea id="approve-notes" name="notes" placeholder="Add any notes about this approval..."></textarea>
+                        <textarea id="approve-notes" name="notes" placeholder="Add any notes about this approval…"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('approve-modal')">Cancel</button>
-                    <button type="submit" class="modal-btn modal-btn-primary approve">Approve Request</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('approve-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-success">Approve Request</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Reject Modal -->
+    <!-- ═══ REJECT MODAL ═══ -->
     <div id="reject-modal" class="modal-overlay">
         <div class="modal-sheet">
             <div class="modal-header">
@@ -503,31 +818,32 @@
                 <button type="button" class="modal-close" onclick="closeModal('reject-modal')">&times;</button>
             </div>
             <form id="reject-form" method="post" th:action="@{/asset-manager/asset-requests/1/reject}">
-                <!-- CSRF token for Spring Security (if enabled) -->
                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>Asset Requested</label>
-                        <div style="padding: 10px 14px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 500; color: #1e1e2a;" id="reject-asset-name"></div>
+                        <label>Asset</label>
+                        <div class="info-display" id="reject-asset-name">—</div>
                     </div>
                     <div class="form-group">
                         <label>Requested By</label>
-                        <div style="padding: 10px 14px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 500; color: #1e1e2a;" id="reject-requester"></div>
+                        <div class="info-display" id="reject-requester">—</div>
                     </div>
                     <div class="form-group">
-                        <label for="reject-notes">Reason for Rejection <span style="color: #ef4444;">*</span></label>
-                        <textarea id="reject-notes" name="notes" placeholder="Please explain why this request is being rejected..." required></textarea>
+                        <label for="reject-notes">Reason for Rejection <span style="color:#ef4444;">*</span></label>
+                        <textarea id="reject-notes" name="notes" placeholder="Please explain why this request is being rejected…" required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('reject-modal')">Cancel</button>
-                    <button type="submit" class="modal-btn modal-btn-primary" style="background: #ef4444;">Reject Request</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('reject-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Reject Request</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- ═══ SCRIPTS ═══ -->
     <script>
+        // ── Modal functions ──
         function openApproveModal(button) {
             const requestId = button.dataset.requestId;
             const assetName = button.dataset.assetName;
@@ -558,7 +874,7 @@
             document.getElementById(modalId).classList.remove('open');
         }
 
-        // Close modals when clicking outside
+        // Close modals on backdrop click
         document.querySelectorAll('.modal-overlay').forEach(modal => {
             modal.addEventListener('click', function(e) {
                 if (e.target === this) {
@@ -575,8 +891,58 @@
                 });
             }
         });
+
+        // ── Table search & filter ──
+        function filterTable() {
+            const searchQuery = document.getElementById('table-search').value.trim().toLowerCase();
+            const categoryFilter = document.getElementById('category-filter').value;
+            const rows = document.querySelectorAll('#requests-table tbody tr.request-row');
+            let visible = 0;
+
+            rows.forEach(row => {
+                const asset = row.dataset.asset?.toLowerCase() || '';
+                const requester = row.dataset.requester?.toLowerCase() || '';
+                const reason = row.dataset.reason?.toLowerCase() || '';
+                const category = row.dataset.category || '';
+
+                const matchesSearch = !searchQuery || asset.includes(searchQuery) || requester.includes(searchQuery) || reason.includes(searchQuery);
+                const matchesCategory = !categoryFilter || category === categoryFilter;
+                const show = matchesSearch && matchesCategory;
+
+                row.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            // Show/hide empty state within table
+            const emptyRow = document.querySelector('#requests-table tbody tr.empty-row');
+            if (visible === 0 && !emptyRow) {
+                const tbody = document.querySelector('#requests-table tbody');
+                const empty = document.createElement('tr');
+                empty.className = 'empty-row';
+                empty.innerHTML = `
+                    <td colspan="6" style="padding:0;">
+                        <div class="empty-state">
+                            <span class="material-symbols-outlined">search_off</span>
+                            <h3>No matching requests</h3>
+                            <p>Try adjusting your search or filter criteria</p>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(empty);
+            } else if (visible > 0 && emptyRow) {
+                emptyRow.remove();
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('table-search').value = '';
+            document.getElementById('category-filter').value = '';
+            filterTable();
+        }
+
+        // Initialise: if there are no rows, the empty state is already shown by Thymeleaf
+        // We handle the dynamic empty state for search/filter.
     </script>
 </main>
 </body>
 </html>
-

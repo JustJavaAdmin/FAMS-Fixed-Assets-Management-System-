@@ -101,7 +101,7 @@ public class AuthenticationManager {
         } else if (isAuditor()) {
             return "/auditor/dashboard";
         } else if (isAssetManager()) {
-            return "/asset-manager/dashboard"; // Asset managers use dedicated dashboard
+            return "/dashboard";
         } else if (isDepartmentHead()) {
             return "/department-head/dashboard";
         } else if (isEmployee()) {

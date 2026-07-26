@@ -24,20 +24,6 @@ public class AssetManagerController {
     @Autowired
     AuthenticationManager authenticationManager;
 
-    /**
-     * Asset Manager Dashboard - View pending requests
-     */
-    @GetMapping("/dashboard")
-    public String dashboard(Model model) {
-        if (!authenticationManager.isAssetManager()) {
-            return "redirect:/dashboard";
-        }
-
-        List<AssetRequest> pendingRequests = assetRequestService.getPendingRequests();
-        model.addAttribute("pendingRequests", pendingRequests);
-        model.addAttribute("pendingCount", pendingRequests.size());
-        return "asset-manager/dashboard";
-    }
 
     /**
      * View all pending asset requests for approval
