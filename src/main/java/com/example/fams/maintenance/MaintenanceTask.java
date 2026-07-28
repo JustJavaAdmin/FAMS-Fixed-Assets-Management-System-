@@ -75,6 +75,13 @@ public class MaintenanceTask {
         }
     }
 
+    // Reminder tracking fields
+    @Column
+    private LocalDateTime lastReminderSentAt;
+
+    @Column(nullable = false)
+    private int remindersSentCount = 0;
+
     public Long getId() {
         return id;
     }
@@ -177,5 +184,21 @@ public class MaintenanceTask {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public LocalDateTime getLastReminderSentAt() {
+        return lastReminderSentAt;
+    }
+
+    public void setLastReminderSentAt(LocalDateTime lastReminderSentAt) {
+        this.lastReminderSentAt = lastReminderSentAt;
+    }
+
+    public int getRemindersSentCount() {
+        return remindersSentCount;
+    }
+
+    public void setRemindersSentCount(int remindersSentCount) {
+        this.remindersSentCount = remindersSentCount;
     }
 }

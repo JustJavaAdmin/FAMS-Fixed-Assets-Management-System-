@@ -25,4 +25,7 @@ public interface MaintenanceTaskRepository extends JpaRepository<MaintenanceTask
     long countByStatus(MaintenanceStatus status);
 
     long countByAsset_DepartmentIgnoreCaseAndStatus(String department, MaintenanceStatus status);
+
+    @EntityGraph(attributePaths = {"asset", "schedule"})
+    List<MaintenanceTask> findByStatusOrderByDueDateAsc(MaintenanceStatus status);
 }

@@ -315,6 +315,248 @@ public class MaintenanceService {
     }
 
     /**
+     * Scheduled reminder task that runs daily at 8 AM to send maintenance reminders.
+     * Sends reminders for:
+     * 1. Upcoming maintenance (nextDueDate within 7 days from today)
+     * 2. Overdue maintenance (nextDueDate has passed)
+     *
+     * Reminders are sent once per day to each asset manager.
+     */
+    @Scheduled(cron = "0 0 8 * * *")
+    public void sendMaintenanceReminders() {
+        try {
+            log.info("Starting maintenance reminder cycle");
+            int remindersSent = 0;
+
+            LocalDate today = LocalDate.now();
+            LocalDate upcomingThreshold = today.plusDays(7);
+
+            // Find all active schedules that need reminders
+            List<MaintenanceSchedule> schedules = scheduleRepository.findByStatusOrderByNextDueDateAsc(MaintenanceStatus.DUE);
+
+            for (MaintenanceSchedule schedule : schedules) {
+                try {
+                    LocalDate nextDue = schedule.getNextDueDate();
+                    if (nextDue == null) continue;
+
+                    boolean isUpcoming = !nextDue.isAfter(upcomingThreshold) && !nextDue.isBefore(today);
+                    boolean isOverdue = nextDue.isBefore(today);
+
+                    if (isUpcoming || isOverdue) {
+                        if (shouldSendReminder(schedule)) {
+                            sendMaintenanceReminder(schedule, isOverdue);
+                            schedule.setLastReminderSentAt(LocalDateTime.now());
+                            schedule.setRemindersSentCount(schedule.getRemindersSentCount() + 1);
+                            scheduleRepository.save(schedule);
+                            remindersSent++;
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.error("Failed to send reminder for schedule {}: {}", schedule.getId(), ex.getMessage(), ex);
+                }
+            }
+
+            // Also send reminders for overdue DUE tasks
+            remindersSent += sendDueTaskReminders(today);
+
+            if (remindersSent > 0) {
+                log.info("Sent {} maintenance reminder(s)", remindersSent);
+            }
+        } catch (Exception ex) {
+            log.error("Maintenance reminder cycle failed: {}", ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Determines if a reminder should be sent for this schedule.
+     * Sends reminders once daily, starting from the day the maintenance is due.
+     */
+    private boolean shouldSendReminder(MaintenanceSchedule schedule) {
+        LocalDateTime lastSent = schedule.getLastReminderSentAt();
+        if (lastSent == null) {
+            return true; // Never sent before
+        }
+
+        // Only send once per day (24 hours)
+        LocalDateTime oneDayAgo = LocalDateTime.now().minusHours(24);
+        return lastSent.isBefore(oneDayAgo);
+    }
+
+    /**
+     * Sends a maintenance reminder email to asset managers.
+     */
+    private void sendMaintenanceReminder(MaintenanceSchedule schedule, boolean isOverdue) {
+        try {
+            List<SyncedUser> managers = syncedUserRepository.findByGroupName(",assetManager,");
+            if (managers == null || managers.isEmpty()) {
+                log.warn("No asset managers found to send maintenance reminder for schedule {}", schedule.getId());
+                return;
+            }
+
+            Asset asset = schedule.getAsset();
+            String assetInfo = (asset != null) ? asset.getName() + " (ID: " + asset.getId() + ")" : schedule.getAssetCategory();
+
+            String subject;
+            StringBuilder body = new StringBuilder();
+
+            if (isOverdue) {
+                subject = "OVERDUE: Maintenance Required - " + assetInfo;
+                body.append("Hello Asset Manager,\n\n");
+                body.append("⚠️  OVERDUE MAINTENANCE ALERT ⚠️\n\n");
+                body.append("The following maintenance is OVERDUE and requires immediate attention:\n\n");
+            } else {
+                subject = "REMINDER: Scheduled Maintenance Due Soon - " + assetInfo;
+                body.append("Hello Asset Manager,\n\n");
+                body.append("📌 MAINTENANCE REMINDER 📌\n\n");
+                body.append("The following maintenance is due within the next 7 days:\n\n");
+            }
+
+            body.append("Asset: ").append(assetInfo).append("\n");
+            if (asset != null) {
+                body.append("Asset Code: ").append(asset.getAssetCode()).append("\n");
+                body.append("Category: ").append(asset.getCategory()).append("\n");
+            }
+            body.append("Service Type: ").append(schedule.getServiceType()).append("\n");
+            body.append("Frequency: ").append(schedule.getFrequency()).append("\n");
+            body.append("Due Date: ").append(schedule.getNextDueDate()).append("\n");
+            body.append("Responsible Party: ").append(schedule.getResponsibleParty()).append("\n");
+            body.append("Role: ").append(schedule.getResponsibleRole()).append("\n");
+
+            if (isOverdue) {
+                body.append("\n⏰ This maintenance is OVERDUE. Please take immediate action to schedule the maintenance.\n");
+            }
+
+            body.append("\nPlease access the system to view and manage this maintenance schedule: ");
+            body.append(appBaseUrl.replaceAll("/+$", "")).append("/asset-manager/dashboard");
+            body.append("\n\n--- REMINDER REMINDER ---\n");
+            body.append("Reminder Number: ").append(schedule.getRemindersSentCount() + 1).append("\n");
+            body.append("You will receive daily reminders until this maintenance is completed.\n\n");
+            body.append("Regards,\n");
+            body.append("FAMS Notification Service\n");
+
+            for (SyncedUser manager : managers) {
+                String to = manager.getEmail();
+                if (to == null || to.isBlank()) continue;
+                try {
+                    emailService.sendEmail(to, subject, body.toString());
+                    log.debug("Sent {} reminder to {}", isOverdue ? "overdue" : "upcoming", to);
+                } catch (Exception ex) {
+                    log.error("Failed to send maintenance reminder to {}: {}", to, ex.getMessage());
+                }
+            }
+        } catch (Exception ex) {
+            log.error("Failed to send maintenance reminder for schedule {}: {}", schedule.getId(), ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Sends reminders for DUE maintenance tasks that are overdue or approaching due date.
+     */
+    private int sendDueTaskReminders(LocalDate today) {
+        int remindersSent = 0;
+        LocalDate upcomingThreshold = today.plusDays(7);
+
+        List<MaintenanceTask> dueTasks = taskRepository.findByStatusOrderByDueDateAsc(MaintenanceStatus.DUE);
+
+        for (MaintenanceTask task : dueTasks) {
+            try {
+                LocalDate dueDate = task.getDueDate();
+                if (dueDate == null) continue;
+
+                boolean isUpcoming = !dueDate.isAfter(upcomingThreshold) && !dueDate.isBefore(today);
+                boolean isOverdue = dueDate.isBefore(today);
+
+                if (isUpcoming || isOverdue) {
+                    if (shouldSendTaskReminder(task)) {
+                        sendDueTaskReminder(task, isOverdue, today);
+                        task.setLastReminderSentAt(LocalDateTime.now());
+                        task.setRemindersSentCount(task.getRemindersSentCount() + 1);
+                        taskRepository.save(task);
+                        remindersSent++;
+                    }
+                }
+            } catch (Exception ex) {
+                log.error("Failed to send reminder for task {}: {}", task.getId(), ex.getMessage(), ex);
+            }
+        }
+
+        return remindersSent;
+    }
+
+    private boolean shouldSendTaskReminder(MaintenanceTask task) {
+        LocalDateTime lastSent = task.getLastReminderSentAt();
+        if (lastSent == null) {
+            return true;
+        }
+        LocalDateTime oneDayAgo = LocalDateTime.now().minusHours(24);
+        return lastSent.isBefore(oneDayAgo);
+    }
+
+    private void sendDueTaskReminder(MaintenanceTask task, boolean isOverdue, LocalDate today) {
+        try {
+            List<SyncedUser> managers = syncedUserRepository.findByGroupName(",assetManager,");
+            if (managers == null || managers.isEmpty()) {
+                return;
+            }
+
+            Asset asset = task.getAsset();
+            String assetInfo = (asset != null) ? asset.getName() + " (ID: " + asset.getId() + ")" : task.getAssetCategory();
+            LocalDate dueDate = task.getDueDate();
+            long daysOverdue = isOverdue ? java.time.temporal.ChronoUnit.DAYS.between(dueDate, today) : 0;
+
+            String subject;
+            StringBuilder body = new StringBuilder();
+
+            if (isOverdue) {
+                subject = "OVERDUE: Maintenance Task - " + assetInfo;
+                body.append("Hello Asset Manager,\n\n");
+                body.append("⚠️  MAINTENANCE TASK OVERDUE ⚠️\n\n");
+                body.append("The following maintenance task is OVERDUE by ").append(daysOverdue).append(" day(s):\n\n");
+            } else {
+                long daysUntilDue = java.time.temporal.ChronoUnit.DAYS.between(today, dueDate);
+                subject = "REMINDER: Maintenance Task Due - " + assetInfo;
+                body.append("Hello Asset Manager,\n\n");
+                body.append("📌 MAINTENANCE TASK REMINDER 📌\n\n");
+                body.append("The following maintenance task is due in ").append(daysUntilDue).append(" day(s):\n\n");
+            }
+
+            body.append("Asset: ").append(assetInfo).append("\n");
+            if (asset != null) {
+                body.append("Asset Code: ").append(asset.getAssetCode()).append("\n");
+                body.append("Category: ").append(asset.getCategory()).append("\n");
+            }
+            body.append("Service Type: ").append(task.getServiceType()).append("\n");
+            body.append("Due Date: ").append(dueDate).append("\n");
+            body.append("Status: ").append(task.getStatus()).append("\n");
+            body.append("Responsible Party: ").append(task.getResponsibleParty()).append("\n");
+            body.append("Role: ").append(task.getResponsibleRole()).append("\n");
+
+            if (isOverdue) {
+                body.append("\n⏰ This task is ").append(daysOverdue).append(" day(s) overdue. Please complete it immediately.\n");
+            }
+
+            body.append("\nPlease access the system to complete this maintenance task: ");
+            body.append(appBaseUrl.replaceAll("/+$", "")).append("/asset-manager/dashboard");
+            body.append("\n\n--- REMINDER NUMBER: ").append(task.getRemindersSentCount() + 1).append(" ---\n");
+            body.append("You will receive daily reminders until this task is marked as completed.\n\n");
+            body.append("Regards,\n");
+            body.append("FAMS Notification Service\n");
+
+            for (SyncedUser manager : managers) {
+                String to = manager.getEmail();
+                if (to == null || to.isBlank()) continue;
+                try {
+                    emailService.sendEmail(to, subject, body.toString());
+                } catch (Exception ex) {
+                    log.error("Failed to send task reminder to {}: {}", to, ex.getMessage());
+                }
+            }
+        } catch (Exception ex) {
+            log.error("Failed to send maintenance task reminder for task {}: {}", task.getId(), ex.getMessage(), ex);
+        }
+    }
+
+    /**
      * Resolves a DUE preventive maintenance task: records the completed work as a PREVENTIVE
      * MaintenanceRecord (linked to the schedule and asset for full traceability) and marks the
      * task COMPLETED. Idempotent-safe: a task that is already resolved cannot be resolved again.

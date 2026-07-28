@@ -17,4 +17,7 @@ public interface MaintenanceScheduleRepository extends JpaRepository<Maintenance
 
     @EntityGraph(attributePaths = "asset")
     List<MaintenanceSchedule> findByNextDueDateLessThanEqualOrderByNextDueDateAsc(LocalDate date);
+
+    @EntityGraph(attributePaths = "asset")
+    List<MaintenanceSchedule> findByStatusOrderByNextDueDateAsc(MaintenanceStatus status);
 }

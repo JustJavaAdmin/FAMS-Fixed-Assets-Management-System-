@@ -62,6 +62,13 @@ public class MaintenanceSchedule {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    // Reminder tracking fields
+    @Column
+    private LocalDateTime lastReminderSentAt;
+
+    @Column(nullable = false)
+    private int remindersSentCount = 0;
+
     @PrePersist
     void beforeCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -72,6 +79,9 @@ public class MaintenanceSchedule {
         }
         if (nextDueDate == null) {
             nextDueDate = startDate;
+        }
+        if (remindersSentCount == 0) {
+            remindersSentCount = 0;
         }
     }
 
@@ -162,5 +172,21 @@ public class MaintenanceSchedule {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public LocalDateTime getLastReminderSentAt() {
+        return lastReminderSentAt;
+    }
+
+    public void setLastReminderSentAt(LocalDateTime lastReminderSentAt) {
+        this.lastReminderSentAt = lastReminderSentAt;
+    }
+
+    public int getRemindersSentCount() {
+        return remindersSentCount;
+    }
+
+    public void setRemindersSentCount(int remindersSentCount) {
+        this.remindersSentCount = remindersSentCount;
     }
 }
