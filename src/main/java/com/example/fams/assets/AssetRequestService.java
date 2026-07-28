@@ -166,8 +166,30 @@ public class AssetRequestService {
 
         // Notify the requester by email about approval
         try {
-            String username = request.getRequestedBy();
-            syncedUserRepository.findByUsername(username).ifPresent(user -> {
+            String requestedById = request.getRequestedBy();
+            // Try multiple lookups: username, keycloak id, then by email match
+            java.util.Optional<SyncedUser> userOpt = syncedUserRepository.findByUsername(requestedById);
+            String resolvedBy = null;
+            if (userOpt.isEmpty()) {
+                userOpt = syncedUserRepository.findByKeycloakId(requestedById);
+                if (userOpt.isPresent()) resolvedBy = "keycloakId";
+            } else {
+                resolvedBy = "username";
+            }
+            if (userOpt.isEmpty()) {
+                // Last resort: search for a synced user with matching email
+                List<SyncedUser> all = syncedUserRepository.findAll();
+                userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requestedById)).findFirst();
+                if (userOpt.isPresent()) resolvedBy = "email";
+            }
+
+            if (userOpt.isEmpty()) {
+                System.out.println("No synced user found for requester id='" + requestedById + "' (requestId=" + request.getId() + ")");
+            } else {
+                System.out.println("Resolved requester '" + requestedById + "' via " + resolvedBy + " -> email=" + userOpt.get().getEmail());
+            }
+
+            userOpt.ifPresent(user -> {
                 String to = user.getEmail();
                 if (to == null || to.isBlank()) return;
                 String subject = "Your asset request has been approved: " + asset.getName();
@@ -218,8 +240,28 @@ public class AssetRequestService {
 
         // Notify the requester by email about rejection
         try {
-            String username = request.getRequestedBy();
-            syncedUserRepository.findByUsername(username).ifPresent(user -> {
+            String requestedById = request.getRequestedBy();
+            java.util.Optional<SyncedUser> userOpt = syncedUserRepository.findByUsername(requestedById);
+            String resolvedBy = null;
+            if (userOpt.isEmpty()) {
+                userOpt = syncedUserRepository.findByKeycloakId(requestedById);
+                if (userOpt.isPresent()) resolvedBy = "keycloakId";
+            } else {
+                resolvedBy = "username";
+            }
+            if (userOpt.isEmpty()) {
+                List<SyncedUser> all = syncedUserRepository.findAll();
+                userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requestedById)).findFirst();
+                if (userOpt.isPresent()) resolvedBy = "email";
+            }
+
+            if (userOpt.isEmpty()) {
+                System.out.println("No synced user found for requester id='" + requestedById + "' (requestId=" + request.getId() + ")");
+            } else {
+                System.out.println("Resolved requester '" + requestedById + "' via " + resolvedBy + " -> email=" + userOpt.get().getEmail());
+            }
+
+            userOpt.ifPresent(user -> {
                 String to = user.getEmail();
                 if (to == null || to.isBlank()) return;
                 String subject = "Your asset request was declined: " + request.getAsset().getName();
