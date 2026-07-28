@@ -76,7 +76,7 @@ public class UserSyncService {
         log.info("Starting Keycloak user sync for realm {} at {}", syncRealmName, lastAttemptedSync);
         try {
             List<UserRepresentation> users = keycloakAdminService.listAllUsers(syncRealmName);
-            log.info("Fetched {} user(s) from Keycloak realm {}", users.size(), syncRealmName);
+//            log.info("Fetched {} user(s) from Keycloak realm {}", users.size(), syncRealmName);
 
             if (users.isEmpty()) {
                 log.warn("No users were returned from Keycloak realm {}. Local table will not be updated.", syncRealmName);
@@ -94,11 +94,11 @@ public class UserSyncService {
                     List<String> grp = keycloakAdminService.getUserGroups(syncRealmName, user.getId());
                     String delimited = toDelimited(grp);
                     groupsByUser.put(user.getId(), delimited);
-                    log.info("Loaded {} group(s) for Keycloak user {} ({})",
-                            grp == null ? 0 : grp.size(), user.getId(), user.getUsername());
+//                    log.info("Loaded {} group(s) for Keycloak user {} ({})",
+//                            grp == null ? 0 : grp.size(), user.getId(), user.getUsername());
                 } catch (Exception ex) {
-                    log.warn("Failed to load groups for Keycloak user {} ({}): {}",
-                            user.getId(), user.getUsername(), ex.getMessage(), ex);
+//                    log.warn("Failed to load groups for Keycloak user {} ({}): {}",
+//                            user.getId(), user.getUsername(), ex.getMessage(), ex);
                     groupsByUser.put(user.getId(), ",");
                 }
             }
@@ -126,14 +126,14 @@ public class UserSyncService {
 
                 syncedUserRepository.save(entity);
                 savedCount++;
-                log.info(
-                        "Synced user into database: keycloakId={}, username={}, email={}, enabled={}, groups={}",
-                        entity.getKeycloakId(),
-                        entity.getUsername(),
-                        entity.getEmail(),
-                        entity.isEnabled(),
-                        entity.getGroups()
-                );
+//                log.info(
+//                        "Synced user into database: keycloakId={}, username={}, email={}, enabled={}, groups={}",
+//                        entity.getKeycloakId(),
+//                        entity.getUsername(),
+//                        entity.getEmail(),
+//                        entity.isEnabled(),
+//                        entity.getGroups()
+//                );
             }
 
             // Remove local rows for users that no longer exist in Keycloak.

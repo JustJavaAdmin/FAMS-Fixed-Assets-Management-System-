@@ -14,10 +14,12 @@ import com.example.fams.lifecycle.LifecycleWorkflowForm;
 import com.example.fams.lifecycle.LifecycleWorkflowStatus;
 import com.example.fams.lifecycle.LifecycleWorkflowType;
 import com.example.fams.lifecycle.AssetLifecycleWorkflow;
+import com.example.fams.mail.EmailService;
 import com.example.fams.maintenance.MaintenanceRecord;
 import com.example.fams.maintenance.MaintenanceRecordRepository;
 import com.example.fams.maintenance.MaintenanceService;
 import com.example.fams.maintenance.MaintenanceStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
@@ -35,6 +37,8 @@ import java.util.NoSuchElementException;
 
 @Controller
 public class EmployeeController {
+    @Autowired
+    private EmailService  emailService;
 
     private final AssetRepository assetRepository;
     private final AssetService assetService;
@@ -215,8 +219,10 @@ public class EmployeeController {
         try {
             String current = currentUsername();
             String displayName = currentDisplayName();
+
             assetRequestService.requestAsset(assetId, current, displayName, reason);
             redirectAttributes.addFlashAttribute("successMessage", "Asset request submitted for approval.");
+
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
