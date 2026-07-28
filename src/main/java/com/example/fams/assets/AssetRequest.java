@@ -28,6 +28,9 @@ public class AssetRequest {
     @Column(nullable = false, length = 120)
     private String requestedByName; // Display name
 
+    @Column(length = 255)
+    private String requestedByEmail; // Email for feedback notification
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private RequestStatus status; // PENDING, APPROVED, REJECTED
@@ -145,6 +148,14 @@ public class AssetRequest {
 
     public void setApprovedByName(String approvedByName) {
         this.approvedByName = approvedByName;
+    }
+
+    public String getRequestedByEmail() {
+        return requestedByEmail;
+    }
+
+    public void setRequestedByEmail(String requestedByEmail) {
+        this.requestedByEmail = requestedByEmail;
     }
 }
 

@@ -47,6 +47,9 @@ public class MaintenanceRecord {
     @Column(length = 160)
     private String requestedBy;
 
+    @Column(length = 255)
+    private String requestedByEmail; // Email for feedback notification
+
     @Column(precision = 19, scale = 2)
     private BigDecimal maintenanceCost;
 
@@ -123,6 +126,14 @@ public class MaintenanceRecord {
 
     public void setRequestedBy(String requestedBy) {
         this.requestedBy = requestedBy;
+    }
+
+    public String getRequestedByEmail() {
+        return requestedByEmail;
+    }
+
+    public void setRequestedByEmail(String requestedByEmail) {
+        this.requestedByEmail = requestedByEmail;
     }
 
     public BigDecimal getMaintenanceCost() {

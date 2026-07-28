@@ -182,7 +182,7 @@ public class MaintenanceService {
                                               String serviceProvider,
                                               BigDecimal maintenanceCost,
                                               LocalDate resolutionDate) {
-        return recordCorrective(assetId, issueDescription, serviceProvider, maintenanceCost, resolutionDate, null);
+        return recordCorrective(assetId, issueDescription, serviceProvider, maintenanceCost, resolutionDate, null, null);
     }
 
     @Transactional
@@ -191,13 +191,15 @@ public class MaintenanceService {
                                               String serviceProvider,
                                               BigDecimal maintenanceCost,
                                               LocalDate resolutionDate,
-                                              String requestedBy) {
+                                              String requestedBy,
+                                              String requestedByEmail) {
         MaintenanceRecord record = new MaintenanceRecord();
         record.setAsset(assetService.findById(assetId));
         record.setType(MaintenanceType.CORRECTIVE);
         record.setIssueDescription(issueDescription);
         record.setServiceProvider(clean(serviceProvider));
         record.setRequestedBy(hasText(requestedBy) ? requestedBy.trim() : "Asset Manager");
+        record.setRequestedByEmail(requestedByEmail);
         record.setMaintenanceCost(maintenanceCost);
         record.setMaintenanceDate(resolutionDate == null ? LocalDate.now() : resolutionDate);
         record.setResolutionDate(resolutionDate);
@@ -390,18 +392,9 @@ public class MaintenanceService {
 
         // Notify the requester of resolution
         try {
-            String requesterId = record.getRequestedBy();
-            if (requesterId != null && !requesterId.equalsIgnoreCase("Asset Manager") && !requesterId.equalsIgnoreCase("System")) {
-                java.util.Optional<SyncedUser> userOpt = syncedUserRepository.findByUsername(requesterId);
-                if (userOpt.isEmpty()) userOpt = syncedUserRepository.findByKeycloakId(requesterId);
-                if (userOpt.isEmpty()) {
-                    List<SyncedUser> all = syncedUserRepository.findAll();
-                    userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requesterId)).findFirst();
-                }
-
-                userOpt.ifPresent(user -> {
-                    String to = user.getEmail();
-                    if (to == null || to.isBlank()) return;
+            String to = record.getRequestedByEmail();
+            if (to != null && !to.isBlank()) {
+                System.out.println("[MAINTENANCE RESOLVE] Sending resolution email to stored address: " + to);
                     Asset asset = record.getAsset();
                     String subject = "Your maintenance request has been resolved: " + (asset != null ? asset.getName() : "Asset");
                     StringBuilder body = new StringBuilder();
@@ -427,7 +420,8 @@ public class MaintenanceService {
                     } catch (Exception ex) {
                         System.err.println("Failed to send maintenance resolution notification to " + to + ": " + ex.getMessage());
                     }
-                });
+            } else {
+                System.out.println("[MAINTENANCE RESOLVE] No email stored for requester (recordId=" + record.getId() + ")");
             }
         } catch (Exception ex) {
             System.err.println("Failed to send maintenance resolution notification: " + ex.getMessage());

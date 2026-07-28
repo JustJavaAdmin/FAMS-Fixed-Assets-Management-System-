@@ -321,16 +321,32 @@ public class AssetLifecycleService {
         // Notify the requester of the decision
         try {
             String requesterId = workflow.getRequestedBy();
+            System.out.println("[LIFECYCLE DECIDE] Looking for requester: '" + requesterId + "'");
             java.util.Optional<SyncedUser> userOpt = syncedUserRepository.findByUsername(requesterId);
-            if (userOpt.isEmpty()) userOpt = syncedUserRepository.findByKeycloakId(requesterId);
-            if (userOpt.isEmpty()) {
-                List<SyncedUser> all = syncedUserRepository.findAll();
-                userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requesterId)).findFirst();
+            if (!userOpt.isEmpty()) {
+                System.out.println("[LIFECYCLE DECIDE] Found requester via username, email: " + userOpt.get().getEmail());
+            } else {
+                userOpt = syncedUserRepository.findByKeycloakId(requesterId);
+                if (!userOpt.isEmpty()) {
+                    System.out.println("[LIFECYCLE DECIDE] Found requester via keycloakId, email: " + userOpt.get().getEmail());
+                } else {
+                    List<SyncedUser> all = syncedUserRepository.findAll();
+                    userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requesterId)).findFirst();
+                    if (!userOpt.isEmpty()) {
+                        System.out.println("[LIFECYCLE DECIDE] Found requester via email match");
+                    } else {
+                        System.out.println("[LIFECYCLE DECIDE] No synced user found for: '" + requesterId + "'");
+                    }
+                }
             }
 
             userOpt.ifPresent(user -> {
                 String to = user.getEmail();
-                if (to == null || to.isBlank()) return;
+                if (to == null || to.isBlank()) {
+                    System.out.println("[LIFECYCLE DECIDE] User found but email is null/blank, skipping");
+                    return;
+                }
+                System.out.println("[LIFECYCLE DECIDE] Sending decision email to: " + to);
                 Asset asset = workflow.getAsset();
                 boolean isApproved = decision == ApprovalDecision.APPROVED;
                 String subject = (isApproved ? "Your " : "Your ") + workflow.getType().name().replace('_', ' ').toLowerCase()

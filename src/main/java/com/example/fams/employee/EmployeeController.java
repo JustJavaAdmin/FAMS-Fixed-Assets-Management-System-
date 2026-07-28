@@ -122,7 +122,7 @@ public class EmployeeController {
                                            RedirectAttributes redirectAttributes) {
         try {
             Asset asset = requireAssignedAsset(assetId);
-            maintenanceService.recordCorrective(asset.getId(), issueDescription, serviceProvider, null, null, currentDisplayName());
+            maintenanceService.recordCorrective(asset.getId(), issueDescription, serviceProvider, null, null, currentDisplayName(), currentUserEmail());
             redirectAttributes.addFlashAttribute("successMessage", "Maintenance request submitted and routed to asset management.");
         } catch (IllegalArgumentException | NoSuchElementException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
@@ -186,8 +186,9 @@ public class EmployeeController {
                                         RedirectAttributes redirectAttributes) {
         try {
             Asset asset = requireAssignedAsset(assetId);
+            String email = currentUserEmail();
             checkoutService.requestCheckout(asset.getId(), currentUsername(),
-                    checkoutDate, dueReturnDate, purpose, conditionBeforeCheckout);
+                    checkoutDate, dueReturnDate, purpose, conditionBeforeCheckout, email);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Checkout request submitted and is awaiting asset manager approval.");
         } catch (IllegalArgumentException | NoSuchElementException ex) {
@@ -219,14 +220,30 @@ public class EmployeeController {
         try {
             String current = currentUsername();
             String displayName = currentDisplayName();
+            String email = currentUserEmail();
 
-            assetRequestService.requestAsset(assetId, current, displayName, reason);
+            assetRequestService.requestAsset(assetId, current, displayName, email, reason);
             redirectAttributes.addFlashAttribute("successMessage", "Asset request submitted for approval.");
 
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/employee/asset-requests";
+    }
+
+    private String currentUserEmail() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return null;
+        }
+        Object principal = auth.getPrincipal();
+        if (principal instanceof DefaultOidcUser oidc) {
+            Object email = oidc.getClaims().get("email");
+            if (email instanceof String value && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     @PostMapping("/employee/asset-requests/{requestId}/cancel")

@@ -19,7 +19,6 @@ public class AssetRequestService {
     private final SyncedUserRepository syncedUserRepository;
     private final EmailService emailService;
 
-    // Base URL used to build links inside notification emails. Defaults to localhost:8080
     @Value("${fams.base-url:http://localhost:9090}")
     private String appBaseUrl;
 
@@ -47,7 +46,8 @@ public class AssetRequestService {
      * Employee requests an asset
      */
     @Transactional
-    public AssetRequest requestAsset(Long assetId, String requestedBy, String requestedByName, String reason) {
+    public AssetRequest requestAsset(Long assetId, String requestedBy, String requestedByName,
+                                     String requestedByEmail, String reason) {
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new IllegalArgumentException("Asset not found"));
 
@@ -67,13 +67,13 @@ public class AssetRequestService {
         request.setAsset(asset);
         request.setRequestedBy(requestedBy);
         request.setRequestedByName(requestedByName);
+        request.setRequestedByEmail(requestedByEmail);
         request.setReason(reason);
         request.setStatus(AssetRequest.RequestStatus.PENDING);
 
         AssetRequest saved = assetRequestRepository.save(request);
 
-        // Notify asset managers by email about the new request. Use the local SyncedUser snapshot
-        // to find users in the assetManager group and send them a clean, professional message.
+        // Notify asset managers by email
         try {
             List<SyncedUser> managers = syncedUserRepository.findByGroupName(",assetManager,");
             if (managers != null && !managers.isEmpty()) {
@@ -97,13 +97,11 @@ public class AssetRequestService {
                     try {
                         emailService.sendEmail(to, subject, body.toString());
                     } catch (Exception ex) {
-                        // Log and continue - do not fail the request because an email couldn't be sent
                         System.err.println("Failed to send asset-request notification to " + to + ": " + ex.getMessage());
                     }
                 }
             }
         } catch (Exception ex) {
-            // Protect the main flow: any failures in notification should not prevent request creation
             System.err.println("Failed to notify asset managers: " + ex.getMessage());
         }
 
@@ -144,18 +142,15 @@ public class AssetRequestService {
             throw new IllegalArgumentException("Only pending requests can be approved");
         }
 
-        // Verify asset is still unassigned
         Asset asset = request.getAsset();
         if (asset.getCustodian() != null && !asset.getCustodian().isBlank()) {
             throw new IllegalArgumentException("Asset has already been assigned to someone else");
         }
 
-        // Assign asset to the requester
         asset.setCustodian(request.getRequestedByName());
         asset.setStatus("Assigned");
         assetRepository.save(asset);
 
-        // Update request
         request.setStatus(AssetRequest.RequestStatus.APPROVED);
         request.setApprovedAt(LocalDateTime.now());
         request.setApprovedBy(approvedBy);
@@ -164,37 +159,14 @@ public class AssetRequestService {
 
         AssetRequest saved = assetRequestRepository.save(request);
 
-        // Notify the requester by email about approval
+        // Notify the requester
         try {
-            String requestedById = request.getRequestedBy();
-            // Try multiple lookups: username, keycloak id, then by email match
-            java.util.Optional<SyncedUser> userOpt = syncedUserRepository.findByUsername(requestedById);
-            String resolvedBy = null;
-            if (userOpt.isEmpty()) {
-                userOpt = syncedUserRepository.findByKeycloakId(requestedById);
-                if (userOpt.isPresent()) resolvedBy = "keycloakId";
-            } else {
-                resolvedBy = "username";
-            }
-            if (userOpt.isEmpty()) {
-                // Last resort: search for a synced user with matching email
-                List<SyncedUser> all = syncedUserRepository.findAll();
-                userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requestedById)).findFirst();
-                if (userOpt.isPresent()) resolvedBy = "email";
-            }
-
-            if (userOpt.isEmpty()) {
-                System.out.println("No synced user found for requester id='" + requestedById + "' (requestId=" + request.getId() + ")");
-            } else {
-                System.out.println("Resolved requester '" + requestedById + "' via " + resolvedBy + " -> email=" + userOpt.get().getEmail());
-            }
-
-            userOpt.ifPresent(user -> {
-                String to = user.getEmail();
-                if (to == null || to.isBlank()) return;
+            String to = request.getRequestedByEmail();
+            if (to != null && !to.isBlank()) {
                 String subject = "Your asset request has been approved: " + asset.getName();
                 StringBuilder body = new StringBuilder();
-                body.append("Hello ").append(request.getRequestedByName() == null ? "" : request.getRequestedByName()).append(",\n\n");
+                body.append("Hello ").append(request.getRequestedByName() == null ? "" : request.getRequestedByName())
+                        .append(",\n\n");
                 body.append("Good news — your request for the following asset has been approved:\n\n");
                 body.append("Asset: ").append(asset.getName()).append(" (ID: ").append(asset.getId()).append(")\n");
                 body.append("Approved by: ").append(approvedByName).append("\n");
@@ -205,12 +177,8 @@ public class AssetRequestService {
                         .append(appBaseUrl.replaceAll("/+$", ""))
                         .append("/employee/asset-requests")
                         .append("\n\nRegards,\nFAMS Notification Service\n");
-                try {
-                    emailService.sendEmail(to, subject, body.toString());
-                } catch (Exception ex) {
-                    System.err.println("Failed to send approval notification to " + to + ": " + ex.getMessage());
-                }
-            });
+                emailService.sendEmail(to, subject, body.toString());
+            }
         } catch (Exception ex) {
             System.err.println("Failed to send approval notification: " + ex.getMessage());
         }
@@ -238,37 +206,17 @@ public class AssetRequestService {
 
         AssetRequest saved = assetRequestRepository.save(request);
 
-        // Notify the requester by email about rejection
+        // Notify the requester
         try {
-            String requestedById = request.getRequestedBy();
-            java.util.Optional<SyncedUser> userOpt = syncedUserRepository.findByUsername(requestedById);
-            String resolvedBy = null;
-            if (userOpt.isEmpty()) {
-                userOpt = syncedUserRepository.findByKeycloakId(requestedById);
-                if (userOpt.isPresent()) resolvedBy = "keycloakId";
-            } else {
-                resolvedBy = "username";
-            }
-            if (userOpt.isEmpty()) {
-                List<SyncedUser> all = syncedUserRepository.findAll();
-                userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requestedById)).findFirst();
-                if (userOpt.isPresent()) resolvedBy = "email";
-            }
-
-            if (userOpt.isEmpty()) {
-                System.out.println("No synced user found for requester id='" + requestedById + "' (requestId=" + request.getId() + ")");
-            } else {
-                System.out.println("Resolved requester '" + requestedById + "' via " + resolvedBy + " -> email=" + userOpt.get().getEmail());
-            }
-
-            userOpt.ifPresent(user -> {
-                String to = user.getEmail();
-                if (to == null || to.isBlank()) return;
+            String to = request.getRequestedByEmail();
+            if (to != null && !to.isBlank()) {
                 String subject = "Your asset request was declined: " + request.getAsset().getName();
                 StringBuilder body = new StringBuilder();
-                body.append("Hello ").append(request.getRequestedByName() == null ? "" : request.getRequestedByName()).append(",\n\n");
+                body.append("Hello ").append(request.getRequestedByName() == null ? "" : request.getRequestedByName())
+                        .append(",\n\n");
                 body.append("We regret to inform you that your request for the following asset was declined:\n\n");
-                body.append("Asset: ").append(request.getAsset().getName()).append(" (ID: ").append(request.getAsset().getId()).append(")\n");
+                body.append("Asset: ").append(request.getAsset().getName())
+                        .append(" (ID: ").append(request.getAsset().getId()).append(")\n");
                 body.append("Processed by: ").append(rejectedByName).append("\n");
                 if (notes != null && !notes.isBlank()) {
                     body.append("Reason: ").append(notes).append("\n");
@@ -277,12 +225,8 @@ public class AssetRequestService {
                         .append(appBaseUrl.replaceAll("/+$", ""))
                         .append("/employee/asset-requests")
                         .append("\n\nRegards,\nFAMS Notification Service\n");
-                try {
-                    emailService.sendEmail(to, subject, body.toString());
-                } catch (Exception ex) {
-                    System.err.println("Failed to send rejection notification to " + to + ": " + ex.getMessage());
-                }
-            });
+                emailService.sendEmail(to, subject, body.toString());
+            }
         } catch (Exception ex) {
             System.err.println("Failed to send rejection notification: " + ex.getMessage());
         }
@@ -313,4 +257,3 @@ public class AssetRequestService {
         return assetRequestRepository.countByStatus(AssetRequest.RequestStatus.PENDING);
     }
 }
-

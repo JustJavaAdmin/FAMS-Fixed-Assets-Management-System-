@@ -39,7 +39,7 @@ public class AssetCheckoutService {
      */
     @Transactional
     public AssetCheckout requestCheckout(Long assetId, String requestedBy, LocalDate checkoutDate,
-                                         LocalDate dueReturnDate, String purpose, String conditionBeforeCheckout) {
+                                         LocalDate dueReturnDate, String purpose, String conditionBeforeCheckout, String requestedByEmail) {
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new NoSuchElementException("Asset not found with id: " + assetId));
 
@@ -55,6 +55,7 @@ public class AssetCheckoutService {
         AssetCheckout checkout = new AssetCheckout();
         checkout.setAsset(asset);
         checkout.setRequestedBy(requestedBy);
+        checkout.setRequestedByEmail(requestedByEmail);
         checkout.setRequestedAt(LocalDateTime.now());
         checkout.setCheckedOutBy(requestedBy);
         checkout.setCheckoutDate(checkoutDate);
@@ -127,17 +128,9 @@ public class AssetCheckoutService {
 
         // Notify requester of approval
         try {
-            String requesterId = checkout.getRequestedBy();
-            java.util.Optional<SyncedUser> userOpt = syncedUserRepository.findByUsername(requesterId);
-            if (userOpt.isEmpty()) userOpt = syncedUserRepository.findByKeycloakId(requesterId);
-            if (userOpt.isEmpty()) {
-                List<SyncedUser> all = syncedUserRepository.findAll();
-                userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requesterId)).findFirst();
-            }
-
-            userOpt.ifPresent(user -> {
-                String to = user.getEmail();
-                if (to == null || to.isBlank()) return;
+            String to = checkout.getRequestedByEmail();
+            if (to != null && !to.isBlank()) {
+                System.out.println("[CHECKOUT APPROVE] Sending approval email to stored address: " + to);
                 String subject = "Your asset checkout request has been approved: " + asset.getName();
                 StringBuilder body = new StringBuilder();
                 body.append("Hello,\n\n");
@@ -155,7 +148,9 @@ public class AssetCheckoutService {
                 } catch (Exception ex) {
                     System.err.println("Failed to send checkout approval notification to " + to + ": " + ex.getMessage());
                 }
-            });
+            } else {
+                System.out.println("[CHECKOUT APPROVE] No email stored for requester (checkoutId=" + checkout.getId() + ")");
+            }
         } catch (Exception ex) {
             System.err.println("Failed to send checkout approval notification: " + ex.getMessage());
         }
@@ -184,17 +179,9 @@ public class AssetCheckoutService {
 
         // Notify requester of rejection
         try {
-            String requesterId = checkout.getRequestedBy();
-            java.util.Optional<SyncedUser> userOpt = syncedUserRepository.findByUsername(requesterId);
-            if (userOpt.isEmpty()) userOpt = syncedUserRepository.findByKeycloakId(requesterId);
-            if (userOpt.isEmpty()) {
-                List<SyncedUser> all = syncedUserRepository.findAll();
-                userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requesterId)).findFirst();
-            }
-
-            userOpt.ifPresent(user -> {
-                String to = user.getEmail();
-                if (to == null || to.isBlank()) return;
+            String to = checkout.getRequestedByEmail();
+            if (to != null && !to.isBlank()) {
+                System.out.println("[CHECKOUT REJECT] Sending rejection email to stored address: " + to);
                 String subject = "Your asset checkout request was declined: " + checkout.getAsset().getName();
                 StringBuilder body = new StringBuilder();
                 body.append("Hello,\n\n");
@@ -213,7 +200,9 @@ public class AssetCheckoutService {
                 } catch (Exception ex) {
                     System.err.println("Failed to send checkout rejection notification to " + to + ": " + ex.getMessage());
                 }
-            });
+            } else {
+                System.out.println("[CHECKOUT REJECT] No email stored for requester (checkoutId=" + checkout.getId() + ")");
+            }
         } catch (Exception ex) {
             System.err.println("Failed to send checkout rejection notification: " + ex.getMessage());
         }
@@ -257,17 +246,9 @@ public class AssetCheckoutService {
 
         // Notify employee of return rejection
         try {
-            String requesterId = checkout.getCheckedOutBy();
-            java.util.Optional<SyncedUser> userOpt = syncedUserRepository.findByUsername(requesterId);
-            if (userOpt.isEmpty()) userOpt = syncedUserRepository.findByKeycloakId(requesterId);
-            if (userOpt.isEmpty()) {
-                List<SyncedUser> all = syncedUserRepository.findAll();
-                userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requesterId)).findFirst();
-            }
-
-            userOpt.ifPresent(user -> {
-                String to = user.getEmail();
-                if (to == null || to.isBlank()) return;
+            String to = checkout.getRequestedByEmail();
+            if (to != null && !to.isBlank()) {
+                System.out.println("[RETURN REJECT] Sending email to stored address: " + to);
                 String subject = "Your asset return request was declined: " + checkout.getAsset().getName();
                 StringBuilder body = new StringBuilder();
                 body.append("Hello,\n\n");
@@ -286,7 +267,9 @@ public class AssetCheckoutService {
                 } catch (Exception ex) {
                     System.err.println("Failed to send return rejection notification to " + to + ": " + ex.getMessage());
                 }
-            });
+            } else {
+                System.out.println("[RETURN REJECT] No email stored for employee (checkoutId=" + checkout.getId() + ")");
+            }
         } catch (Exception ex) {
             System.err.println("Failed to send return rejection notification: " + ex.getMessage());
         }
