@@ -11,6 +11,8 @@ public interface SyncedUserRepository extends JpaRepository<SyncedUser, Long> {
 
     Optional<SyncedUser> findByKeycloakId(String keycloakId);
 
+    // Find a synced user by their username (used to lookup the requester's email)
+    Optional<SyncedUser> findByUsername(String username);
     /**
      * Users that belong to the given group. Group names are stored
      * comma-delimited WITH leading/trailing commas (e.g. ",employees,admins,"),

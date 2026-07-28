@@ -1,5 +1,9 @@
 package com.example.fams.assets;
 
+import com.example.fams.aau.keycloak.SyncedUser;
+import com.example.fams.aau.keycloak.SyncedUserRepository;
+import com.example.fams.mail.EmailService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,11 +16,21 @@ public class AssetRequestService {
 
     private final AssetRequestRepository assetRequestRepository;
     private final AssetRepository assetRepository;
+    private final SyncedUserRepository syncedUserRepository;
+    private final EmailService emailService;
+
+    // Base URL used to build links inside notification emails. Defaults to localhost:8080
+    @Value("${fams.base-url:http://localhost:9090}")
+    private String appBaseUrl;
 
     public AssetRequestService(AssetRequestRepository assetRequestRepository,
-                              AssetRepository assetRepository) {
+                               AssetRepository assetRepository,
+                               SyncedUserRepository syncedUserRepository,
+                               EmailService emailService) {
         this.assetRequestRepository = assetRequestRepository;
         this.assetRepository = assetRepository;
+        this.syncedUserRepository = syncedUserRepository;
+        this.emailService = emailService;
     }
 
     /**
@@ -56,7 +70,44 @@ public class AssetRequestService {
         request.setReason(reason);
         request.setStatus(AssetRequest.RequestStatus.PENDING);
 
-        return assetRequestRepository.save(request);
+        AssetRequest saved = assetRequestRepository.save(request);
+
+        // Notify asset managers by email about the new request. Use the local SyncedUser snapshot
+        // to find users in the assetManager group and send them a clean, professional message.
+        try {
+            List<SyncedUser> managers = syncedUserRepository.findByGroupName(",assetManager,");
+            if (managers != null && !managers.isEmpty()) {
+                String subject = "Asset request awaiting approval: " + asset.getName();
+                StringBuilder body = new StringBuilder();
+                body.append("Hello,\n\n");
+                body.append("An employee has requested the following asset and your approval is required:\n\n");
+                body.append("Asset: ").append(asset.getName()).append(" (ID: ").append(asset.getId()).append(")\n");
+                body.append("Requested by: ").append(requestedByName).append("\n");
+                if (reason != null && !reason.isBlank()) {
+                    body.append("Reason: ").append(reason).append("\n");
+                }
+                body.append("\nYou can review and action this request here: ")
+                        .append(appBaseUrl.replaceAll("/+$", ""))
+                        .append("/asset-manager/asset-requests")
+                        .append("\n\nRegards,\nFAMS Notification Service\n");
+
+                for (SyncedUser manager : managers) {
+                    String to = manager.getEmail();
+                    if (to == null || to.isBlank()) continue;
+                    try {
+                        emailService.sendEmail(to, subject, body.toString());
+                    } catch (Exception ex) {
+                        // Log and continue - do not fail the request because an email couldn't be sent
+                        System.err.println("Failed to send asset-request notification to " + to + ": " + ex.getMessage());
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            // Protect the main flow: any failures in notification should not prevent request creation
+            System.err.println("Failed to notify asset managers: " + ex.getMessage());
+        }
+
+        return saved;
     }
 
     /**
@@ -111,7 +162,38 @@ public class AssetRequestService {
         request.setApprovedByName(approvedByName);
         request.setApprovalNotes(notes);
 
-        return assetRequestRepository.save(request);
+        AssetRequest saved = assetRequestRepository.save(request);
+
+        // Notify the requester by email about approval
+        try {
+            String username = request.getRequestedBy();
+            syncedUserRepository.findByUsername(username).ifPresent(user -> {
+                String to = user.getEmail();
+                if (to == null || to.isBlank()) return;
+                String subject = "Your asset request has been approved: " + asset.getName();
+                StringBuilder body = new StringBuilder();
+                body.append("Hello ").append(request.getRequestedByName() == null ? "" : request.getRequestedByName()).append(",\n\n");
+                body.append("Good news — your request for the following asset has been approved:\n\n");
+                body.append("Asset: ").append(asset.getName()).append(" (ID: ").append(asset.getId()).append(")\n");
+                body.append("Approved by: ").append(approvedByName).append("\n");
+                if (notes != null && !notes.isBlank()) {
+                    body.append("Notes: ").append(notes).append("\n");
+                }
+                body.append("\nYou can view your requests here: ")
+                        .append(appBaseUrl.replaceAll("/+$", ""))
+                        .append("/employee/asset-requests")
+                        .append("\n\nRegards,\nFAMS Notification Service\n");
+                try {
+                    emailService.sendEmail(to, subject, body.toString());
+                } catch (Exception ex) {
+                    System.err.println("Failed to send approval notification to " + to + ": " + ex.getMessage());
+                }
+            });
+        } catch (Exception ex) {
+            System.err.println("Failed to send approval notification: " + ex.getMessage());
+        }
+
+        return saved;
     }
 
     /**
@@ -132,7 +214,38 @@ public class AssetRequestService {
         request.setApprovedByName(rejectedByName);
         request.setApprovalNotes(notes);
 
-        return assetRequestRepository.save(request);
+        AssetRequest saved = assetRequestRepository.save(request);
+
+        // Notify the requester by email about rejection
+        try {
+            String username = request.getRequestedBy();
+            syncedUserRepository.findByUsername(username).ifPresent(user -> {
+                String to = user.getEmail();
+                if (to == null || to.isBlank()) return;
+                String subject = "Your asset request was declined: " + request.getAsset().getName();
+                StringBuilder body = new StringBuilder();
+                body.append("Hello ").append(request.getRequestedByName() == null ? "" : request.getRequestedByName()).append(",\n\n");
+                body.append("We regret to inform you that your request for the following asset was declined:\n\n");
+                body.append("Asset: ").append(request.getAsset().getName()).append(" (ID: ").append(request.getAsset().getId()).append(")\n");
+                body.append("Processed by: ").append(rejectedByName).append("\n");
+                if (notes != null && !notes.isBlank()) {
+                    body.append("Reason: ").append(notes).append("\n");
+                }
+                body.append("\nYou can view your requests here: ")
+                        .append(appBaseUrl.replaceAll("/+$", ""))
+                        .append("/employee/asset-requests")
+                        .append("\n\nRegards,\nFAMS Notification Service\n");
+                try {
+                    emailService.sendEmail(to, subject, body.toString());
+                } catch (Exception ex) {
+                    System.err.println("Failed to send rejection notification to " + to + ": " + ex.getMessage());
+                }
+            });
+        } catch (Exception ex) {
+            System.err.println("Failed to send rejection notification: " + ex.getMessage());
+        }
+
+        return saved;
     }
 
     /**

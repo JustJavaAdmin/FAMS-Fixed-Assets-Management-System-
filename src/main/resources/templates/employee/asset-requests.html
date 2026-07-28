@@ -806,8 +806,6 @@
                                 </span>
                             </div>
                         </div>
-                        <span class="asset-status available" th:if="${asset.quantityAvailable > 0}">Available</span>
-                        <span class="asset-status limited" th:unless="${asset.quantityAvailable > 0}">Limited</span>
                         <button class="btn-request-sm" onclick="openRequestModal(this)" th:data-asset-id="${asset.id}" th:data-asset-name="${asset.name}">
                             <span class="material-symbols-outlined">add</span>
                             Request
