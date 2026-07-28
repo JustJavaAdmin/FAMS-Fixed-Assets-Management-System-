@@ -8,16 +8,29 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import com.example.fams.aau.keycloak.SyncedUser;
+import com.example.fams.aau.keycloak.SyncedUserRepository;
+import com.example.fams.mail.EmailService;
+import org.springframework.beans.factory.annotation.Value;
 @Service
 public class AssetCheckoutService {
 
     private final AssetCheckoutRepository checkoutRepository;
     private final AssetRepository assetRepository;
+    private final SyncedUserRepository syncedUserRepository;
+    private final EmailService emailService;
+
+    @Value("${fams.base-url:http://localhost:9090}")
+    private String appBaseUrl;
 
     public AssetCheckoutService(AssetCheckoutRepository checkoutRepository,
-                                AssetRepository assetRepository) {
+                                AssetRepository assetRepository,
+                                SyncedUserRepository syncedUserRepository,
+                                EmailService emailService) {
         this.checkoutRepository = checkoutRepository;
         this.assetRepository = assetRepository;
+        this.syncedUserRepository = syncedUserRepository;
+        this.emailService = emailService;
     }
 
     /**
@@ -50,7 +63,43 @@ public class AssetCheckoutService {
         checkout.setConditionBeforeCheckout(conditionBeforeCheckout);
         checkout.setStatus("Pending Approval");
 
-        return checkoutRepository.save(checkout);
+        AssetCheckout saved = checkoutRepository.save(checkout);
+
+        // Notify asset managers of new checkout request
+        try {
+            List<SyncedUser> managers = syncedUserRepository.findByGroupName(",assetManager,");
+            if (managers != null && !managers.isEmpty()) {
+                String subject = "Asset checkout request awaiting approval: " + asset.getName();
+                StringBuilder body = new StringBuilder();
+                body.append("Hello,\n\n");
+                body.append("An employee has requested to check out the following asset:\n\n");
+                body.append("Asset: ").append(asset.getName()).append(" (ID: ").append(asset.getId()).append(")\n");
+                body.append("Requested by: ").append(requestedBy).append("\n");
+                body.append("Checkout Date: ").append(checkoutDate).append("\n");
+                body.append("Due Return Date: ").append(dueReturnDate).append("\n");
+                if (purpose != null && !purpose.isBlank()) {
+                    body.append("Purpose: ").append(purpose).append("\n");
+                }
+                body.append("\nYou can review and action this request here: ")
+                        .append(appBaseUrl.replaceAll("/+$", ""))
+                        .append("/admin/dashboard")
+                        .append("\n\nRegards,\nFAMS Notification Service\n");
+
+                for (SyncedUser manager : managers) {
+                    String to = manager.getEmail();
+                    if (to == null || to.isBlank()) continue;
+                    try {
+                        emailService.sendEmail(to, subject, body.toString());
+                    } catch (Exception ex) {
+                        System.err.println("Failed to send checkout notification to " + to + ": " + ex.getMessage());
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            System.err.println("Failed to notify asset managers of checkout request: " + ex.getMessage());
+        }
+
+        return saved;
     }
 
     /**
@@ -76,6 +125,41 @@ public class AssetCheckoutService {
         asset.setStatus("Checked Out");
         assetRepository.save(asset);
 
+        // Notify requester of approval
+        try {
+            String requesterId = checkout.getRequestedBy();
+            java.util.Optional<SyncedUser> userOpt = syncedUserRepository.findByUsername(requesterId);
+            if (userOpt.isEmpty()) userOpt = syncedUserRepository.findByKeycloakId(requesterId);
+            if (userOpt.isEmpty()) {
+                List<SyncedUser> all = syncedUserRepository.findAll();
+                userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requesterId)).findFirst();
+            }
+
+            userOpt.ifPresent(user -> {
+                String to = user.getEmail();
+                if (to == null || to.isBlank()) return;
+                String subject = "Your asset checkout request has been approved: " + asset.getName();
+                StringBuilder body = new StringBuilder();
+                body.append("Hello,\n\n");
+                body.append("Good news — your checkout request for the following asset has been approved:\n\n");
+                body.append("Asset: ").append(asset.getName()).append(" (ID: ").append(asset.getId()).append(")\n");
+                body.append("Checkout Date: ").append(checkout.getCheckoutDate()).append("\n");
+                body.append("Due Return Date: ").append(checkout.getDueReturnDate()).append("\n");
+                body.append("Approved by: ").append(approvedBy).append("\n\n");
+                body.append("You can view your checkout details here: ")
+                        .append(appBaseUrl.replaceAll("/+$", ""))
+                        .append("/employee/checkout-requests")
+                        .append("\n\nRegards,\nFAMS Notification Service\n");
+                try {
+                    emailService.sendEmail(to, subject, body.toString());
+                } catch (Exception ex) {
+                    System.err.println("Failed to send checkout approval notification to " + to + ": " + ex.getMessage());
+                }
+            });
+        } catch (Exception ex) {
+            System.err.println("Failed to send checkout approval notification: " + ex.getMessage());
+        }
+
         return saved;
     }
 
@@ -96,7 +180,45 @@ public class AssetCheckoutService {
         checkout.setRejectionReason(reason);
         checkout.setStatus("Rejected");
 
-        return checkoutRepository.save(checkout);
+        AssetCheckout saved = checkoutRepository.save(checkout);
+
+        // Notify requester of rejection
+        try {
+            String requesterId = checkout.getRequestedBy();
+            java.util.Optional<SyncedUser> userOpt = syncedUserRepository.findByUsername(requesterId);
+            if (userOpt.isEmpty()) userOpt = syncedUserRepository.findByKeycloakId(requesterId);
+            if (userOpt.isEmpty()) {
+                List<SyncedUser> all = syncedUserRepository.findAll();
+                userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requesterId)).findFirst();
+            }
+
+            userOpt.ifPresent(user -> {
+                String to = user.getEmail();
+                if (to == null || to.isBlank()) return;
+                String subject = "Your asset checkout request was declined: " + checkout.getAsset().getName();
+                StringBuilder body = new StringBuilder();
+                body.append("Hello,\n\n");
+                body.append("We regret to inform you that your checkout request for the following asset was declined:\n\n");
+                body.append("Asset: ").append(checkout.getAsset().getName()).append(" (ID: ").append(checkout.getAsset().getId()).append(")\n");
+                body.append("Processed by: ").append(approvedBy).append("\n");
+                if (reason != null && !reason.isBlank()) {
+                    body.append("Reason: ").append(reason).append("\n");
+                }
+                body.append("\nYou can view your requests here: ")
+                        .append(appBaseUrl.replaceAll("/+$", ""))
+                        .append("/employee/checkout-requests")
+                        .append("\n\nRegards,\nFAMS Notification Service\n");
+                try {
+                    emailService.sendEmail(to, subject, body.toString());
+                } catch (Exception ex) {
+                    System.err.println("Failed to send checkout rejection notification to " + to + ": " + ex.getMessage());
+                }
+            });
+        } catch (Exception ex) {
+            System.err.println("Failed to send checkout rejection notification: " + ex.getMessage());
+        }
+
+        return saved;
     }
 
     /**
@@ -131,7 +253,45 @@ public class AssetCheckoutService {
         checkout.setRejectionReason(reason);
         checkout.setStatus("Checked Out");
 
-        return checkoutRepository.save(checkout);
+        AssetCheckout saved = checkoutRepository.save(checkout);
+
+        // Notify employee of return rejection
+        try {
+            String requesterId = checkout.getCheckedOutBy();
+            java.util.Optional<SyncedUser> userOpt = syncedUserRepository.findByUsername(requesterId);
+            if (userOpt.isEmpty()) userOpt = syncedUserRepository.findByKeycloakId(requesterId);
+            if (userOpt.isEmpty()) {
+                List<SyncedUser> all = syncedUserRepository.findAll();
+                userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requesterId)).findFirst();
+            }
+
+            userOpt.ifPresent(user -> {
+                String to = user.getEmail();
+                if (to == null || to.isBlank()) return;
+                String subject = "Your asset return request was declined: " + checkout.getAsset().getName();
+                StringBuilder body = new StringBuilder();
+                body.append("Hello,\n\n");
+                body.append("We regret to inform you that your return request for the following asset was declined:\n\n");
+                body.append("Asset: ").append(checkout.getAsset().getName()).append(" (ID: ").append(checkout.getAsset().getId()).append(")\n");
+                body.append("Processed by: ").append(rejectedBy).append("\n");
+                if (reason != null && !reason.isBlank()) {
+                    body.append("Reason: ").append(reason).append("\n");
+                }
+                body.append("\nThe asset remains checked out to you. You can view details here: ")
+                        .append(appBaseUrl.replaceAll("/+$", ""))
+                        .append("/employee/checkout-requests")
+                        .append("\n\nRegards,\nFAMS Notification Service\n");
+                try {
+                    emailService.sendEmail(to, subject, body.toString());
+                } catch (Exception ex) {
+                    System.err.println("Failed to send return rejection notification to " + to + ": " + ex.getMessage());
+                }
+            });
+        } catch (Exception ex) {
+            System.err.println("Failed to send return rejection notification: " + ex.getMessage());
+        }
+
+        return saved;
     }
 
     /**
@@ -190,7 +350,41 @@ public class AssetCheckoutService {
         checkout.setReturnNotes(returnNotes);
         checkout.setStatus("Pending Return");
 
-        return checkoutRepository.save(checkout);
+        AssetCheckout saved = checkoutRepository.save(checkout);
+
+        // Notify asset managers of return request
+        try {
+            List<SyncedUser> managers = syncedUserRepository.findByGroupName(",assetManager,");
+            if (managers != null && !managers.isEmpty()) {
+                String subject = "Asset return request awaiting approval: " + checkout.getAsset().getName();
+                StringBuilder body = new StringBuilder();
+                body.append("Hello,\n\n");
+                body.append("An employee has requested to return the following asset:\n\n");
+                body.append("Asset: ").append(checkout.getAsset().getName()).append(" (ID: ").append(checkout.getAsset().getId()).append(")\n");
+                body.append("Checked out by: ").append(checkout.getCheckedOutBy()).append("\n");
+                if (returnNotes != null && !returnNotes.isBlank()) {
+                    body.append("Notes: ").append(returnNotes).append("\n");
+                }
+                body.append("\nYou can review and action this request here: ")
+                        .append(appBaseUrl.replaceAll("/+$", ""))
+                        .append("/admin/dashboard")
+                        .append("\n\nRegards,\nFAMS Notification Service\n");
+
+                for (SyncedUser manager : managers) {
+                    String to = manager.getEmail();
+                    if (to == null || to.isBlank()) continue;
+                    try {
+                        emailService.sendEmail(to, subject, body.toString());
+                    } catch (Exception ex) {
+                        System.err.println("Failed to send return request notification to " + to + ": " + ex.getMessage());
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            System.err.println("Failed to notify asset managers of return request: " + ex.getMessage());
+        }
+
+        return saved;
     }
 
     /**

@@ -8,6 +8,10 @@ import com.example.fams.maintenance.MaintenanceRecordRepository;
 import com.example.fams.organization.DepartmentHead;
 import com.example.fams.organization.DepartmentHeadRepository;
 import com.example.fams.settings.AdminSettingsService;
+import com.example.fams.aau.keycloak.SyncedUser;
+import com.example.fams.aau.keycloak.SyncedUserRepository;
+import com.example.fams.mail.EmailService;
+import org.springframework.beans.factory.annotation.Value;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
 import org.flowable.engine.runtime.ProcessInstance;
@@ -35,6 +39,9 @@ public class AssetLifecycleService {
 
     private static final String PROCESS_KEY = "assetLifecycleWorkflow";
 
+    @Value("${fams.base-url:http://localhost:9090}")
+    private String appBaseUrl;
+
     private final AssetRepository assetRepository;
     private final AssetLifecycleWorkflowRepository workflowRepository;
     private final AssetLifecycleApprovalActionRepository approvalActionRepository;
@@ -45,6 +52,8 @@ public class AssetLifecycleService {
     private final TaskService taskService;
     private final AdminSettingsService adminSettingsService;
     private final AuthenticationManager authenticationManager;
+    private final SyncedUserRepository syncedUserRepository;
+    private final EmailService emailService;
 
     public AssetLifecycleService(AssetRepository assetRepository,
                                  AssetLifecycleWorkflowRepository workflowRepository,
@@ -55,7 +64,9 @@ public class AssetLifecycleService {
                                  RuntimeService runtimeService,
                                  TaskService taskService,
                                  AdminSettingsService adminSettingsService,
-                                 AuthenticationManager authenticationManager) {
+                                AuthenticationManager authenticationManager,
+                                SyncedUserRepository syncedUserRepository,
+                                EmailService emailService) {
         this.assetRepository = assetRepository;
         this.workflowRepository = workflowRepository;
         this.approvalActionRepository = approvalActionRepository;
@@ -66,6 +77,8 @@ public class AssetLifecycleService {
         this.taskService = taskService;
         this.adminSettingsService = adminSettingsService;
         this.authenticationManager = authenticationManager;
+        this.syncedUserRepository = syncedUserRepository;
+        this.emailService = emailService;
     }
 
     private static final Logger log = LoggerFactory.getLogger(AssetLifecycleService.class);
@@ -110,7 +123,44 @@ public class AssetLifecycleService {
         addHistory(asset, eventFor(workflow.getType()), workflow.getRequestedBy(),
                 workflow.getType().name().replace('_', ' ') + " request submitted",
                 describeSubmission(workflow), null, targetSummary(workflow));
-        return workflowRepository.save(workflow);
+        AssetLifecycleWorkflow saved = workflowRepository.save(workflow);
+
+        // Notify asset managers of new lifecycle workflow request
+        try {
+            List<SyncedUser> managers = syncedUserRepository.findByGroupName(",assetManager,");
+            if (managers != null && !managers.isEmpty()) {
+                String subject = workflow.getType().name().replace('_', ' ') + " request awaiting approval: " + asset.getName();
+                StringBuilder body = new StringBuilder();
+                body.append("Hello,\n\n");
+                body.append("A new ").append(workflow.getType().name().replace('_', ' ').toLowerCase())
+                        .append(" request for the following asset requires your attention:\n\n");
+                body.append("Asset: ").append(asset.getName()).append(" (ID: ").append(asset.getId()).append(")\n");
+                body.append("Request Type: ").append(workflow.getType().name().replace('_', ' ')).append("\n");
+                body.append("Requested by: ").append(workflow.getRequestedBy()).append("\n");
+                body.append("Requested Effective Date: ").append(workflow.getRequestedEffectiveDate()).append("\n");
+                if (workflow.getReason() != null && !workflow.getReason().isBlank()) {
+                    body.append("Reason: ").append(workflow.getReason()).append("\n");
+                }
+                body.append("\nYou can review and action this request here: ")
+                        .append(appBaseUrl.replaceAll("/+$", ""))
+                        .append("/admin/dashboard")
+                        .append("\n\nRegards,\nFAMS Notification Service\n");
+
+                for (SyncedUser manager : managers) {
+                    String to = manager.getEmail();
+                    if (to == null || to.isBlank()) continue;
+                    try {
+                        emailService.sendEmail(to, subject, body.toString());
+                    } catch (Exception ex) {
+                        System.err.println("Failed to send lifecycle request notification to " + to + ": " + ex.getMessage());
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            System.err.println("Failed to notify asset managers of lifecycle request: " + ex.getMessage());
+        }
+
+        return saved;
     }
 
     /**
@@ -266,7 +316,60 @@ public class AssetLifecycleService {
         } else {
             workflow.setStatus(LifecycleWorkflowStatus.PENDING_APPROVAL);
         }
-        return workflowRepository.save(workflow);
+        AssetLifecycleWorkflow saved = workflowRepository.save(workflow);
+
+        // Notify the requester of the decision
+        try {
+            String requesterId = workflow.getRequestedBy();
+            java.util.Optional<SyncedUser> userOpt = syncedUserRepository.findByUsername(requesterId);
+            if (userOpt.isEmpty()) userOpt = syncedUserRepository.findByKeycloakId(requesterId);
+            if (userOpt.isEmpty()) {
+                List<SyncedUser> all = syncedUserRepository.findAll();
+                userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requesterId)).findFirst();
+            }
+
+            userOpt.ifPresent(user -> {
+                String to = user.getEmail();
+                if (to == null || to.isBlank()) return;
+                Asset asset = workflow.getAsset();
+                boolean isApproved = decision == ApprovalDecision.APPROVED;
+                String subject = (isApproved ? "Your " : "Your ") + workflow.getType().name().replace('_', ' ').toLowerCase()
+                        + " request has been " + (isApproved ? "approved" : "declined") + ": " + (asset != null ? asset.getName() : "Asset");
+                StringBuilder body = new StringBuilder();
+                body.append("Hello,\n\n");
+                if (isApproved) {
+                    body.append("Good news — your ").append(workflow.getType().name().replace('_', ' ').toLowerCase())
+                            .append(" request for the following asset has been approved:\n\n");
+                } else {
+                    body.append("We regret to inform you that your ").append(workflow.getType().name().replace('_', ' ').toLowerCase())
+                            .append(" request for the following asset was declined:\n\n");
+                }
+                if (asset != null) {
+                    body.append("Asset: ").append(asset.getName()).append(" (ID: ").append(asset.getId()).append(")\n");
+                }
+                body.append("Request Type: ").append(workflow.getType().name().replace('_', ' ')).append("\n");
+                body.append("Processed by: ").append(action.getActor()).append("\n");
+                if (workflow.getReason() != null && !workflow.getReason().isBlank()) {
+                    body.append("Reason: ").append(workflow.getReason()).append("\n");
+                }
+                if (action.getComment() != null && !action.getComment().isBlank()) {
+                    body.append("Comment: ").append(action.getComment()).append("\n");
+                }
+                body.append("\nYou can view details here: ")
+                        .append(appBaseUrl.replaceAll("/+$", ""))
+                        .append("/employee/dashboard")
+                        .append("\n\nRegards,\nFAMS Notification Service\n");
+                try {
+                    emailService.sendEmail(to, subject, body.toString());
+                } catch (Exception ex) {
+                    System.err.println("Failed to send lifecycle decision notification to " + to + ": " + ex.getMessage());
+                }
+            });
+        } catch (Exception ex) {
+            System.err.println("Failed to send lifecycle decision notification: " + ex.getMessage());
+        }
+
+        return saved;
     }
 
     @Transactional

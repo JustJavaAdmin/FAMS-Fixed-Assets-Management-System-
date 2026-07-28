@@ -2,6 +2,10 @@ package com.example.fams.maintenance;
 
 import com.example.fams.assets.Asset;
 import com.example.fams.assets.AssetService;
+import com.example.fams.aau.keycloak.SyncedUser;
+import com.example.fams.aau.keycloak.SyncedUserRepository;
+import com.example.fams.mail.EmailService;
+import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpException;
@@ -20,6 +24,9 @@ public class MaintenanceService {
 
     private static final Logger log = LoggerFactory.getLogger(MaintenanceService.class);
 
+    @Value("${fams.base-url:http://localhost:9090}")
+    private String appBaseUrl;
+
     /**
      * Upper bound on how many missed intervals a single schedule will generate in one pass.
      * Guarantees the backlog catch-up loop always terminates even for schedules whose
@@ -37,17 +44,23 @@ public class MaintenanceService {
     private final MaintenanceRecordRepository recordRepository;
     private final MaintenanceTaskRepository taskRepository;
     private final RabbitTemplate rabbitTemplate;
+    private final SyncedUserRepository syncedUserRepository;
+    private final EmailService emailService;
 
     public MaintenanceService(AssetService assetService,
                               MaintenanceScheduleRepository scheduleRepository,
                               MaintenanceRecordRepository recordRepository,
                               MaintenanceTaskRepository taskRepository,
-                              RabbitTemplate rabbitTemplate) {
+                              RabbitTemplate rabbitTemplate,
+                              SyncedUserRepository syncedUserRepository,
+                              EmailService emailService) {
         this.assetService = assetService;
         this.scheduleRepository = scheduleRepository;
         this.recordRepository = recordRepository;
         this.taskRepository = taskRepository;
         this.rabbitTemplate = rabbitTemplate;
+        this.syncedUserRepository = syncedUserRepository;
+        this.emailService = emailService;
     }
 
     @Transactional(readOnly = true)
@@ -189,7 +202,47 @@ public class MaintenanceService {
         record.setMaintenanceDate(resolutionDate == null ? LocalDate.now() : resolutionDate);
         record.setResolutionDate(resolutionDate);
         record.setStatus(resolutionDate == null ? MaintenanceStatus.OPEN : MaintenanceStatus.COMPLETED);
-        return recordRepository.save(record);
+        MaintenanceRecord saved = recordRepository.save(record);
+
+        // Notify asset managers of new maintenance request (only if OPEN - unresolved)
+        if (record.getStatus() == MaintenanceStatus.OPEN) {
+            try {
+                List<SyncedUser> managers = syncedUserRepository.findByGroupName(",assetManager,");
+                if (managers != null && !managers.isEmpty()) {
+                    Asset asset = record.getAsset();
+                    String subject = "Maintenance request: " + (asset != null ? asset.getName() : "Unknown Asset");
+                    StringBuilder body = new StringBuilder();
+                    body.append("Hello,\n\n");
+                    body.append("An employee has submitted a maintenance request that requires attention:\n\n");
+                    if (asset != null) {
+                        body.append("Asset: ").append(asset.getName()).append(" (ID: ").append(asset.getId()).append(")\n");
+                    }
+                    body.append("Requested by: ").append(record.getRequestedBy()).append("\n");
+                    body.append("Issue: ").append(issueDescription).append("\n");
+                    if (serviceProvider != null && !serviceProvider.isBlank()) {
+                        body.append("Service Provider: ").append(serviceProvider).append("\n");
+                    }
+                    body.append("\nYou can view and resolve this request here: ")
+                            .append(appBaseUrl.replaceAll("/+$", ""))
+                            .append("/admin/dashboard")
+                            .append("\n\nRegards,\nFAMS Notification Service\n");
+
+                    for (SyncedUser manager : managers) {
+                        String to = manager.getEmail();
+                        if (to == null || to.isBlank()) continue;
+                        try {
+                            emailService.sendEmail(to, subject, body.toString());
+                        } catch (Exception ex) {
+                            System.err.println("Failed to send maintenance notification to " + to + ": " + ex.getMessage());
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                System.err.println("Failed to notify asset managers of maintenance request: " + ex.getMessage());
+            }
+        }
+
+        return saved;
     }
 
     /**
@@ -333,7 +386,52 @@ public class MaintenanceService {
             record.setIssueDescription(record.getIssueDescription() + " | Resolution: " + clean(notes));
         }
         record.setStatus(MaintenanceStatus.COMPLETED);
-        recordRepository.save(record);
+        MaintenanceRecord saved = recordRepository.save(record);
+
+        // Notify the requester of resolution
+        try {
+            String requesterId = record.getRequestedBy();
+            if (requesterId != null && !requesterId.equalsIgnoreCase("Asset Manager") && !requesterId.equalsIgnoreCase("System")) {
+                java.util.Optional<SyncedUser> userOpt = syncedUserRepository.findByUsername(requesterId);
+                if (userOpt.isEmpty()) userOpt = syncedUserRepository.findByKeycloakId(requesterId);
+                if (userOpt.isEmpty()) {
+                    List<SyncedUser> all = syncedUserRepository.findAll();
+                    userOpt = all.stream().filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(requesterId)).findFirst();
+                }
+
+                userOpt.ifPresent(user -> {
+                    String to = user.getEmail();
+                    if (to == null || to.isBlank()) return;
+                    Asset asset = record.getAsset();
+                    String subject = "Your maintenance request has been resolved: " + (asset != null ? asset.getName() : "Asset");
+                    StringBuilder body = new StringBuilder();
+                    body.append("Hello,\n\n");
+                    body.append("Good news — your maintenance request has been resolved:\n\n");
+                    if (asset != null) {
+                        body.append("Asset: ").append(asset.getName()).append(" (ID: ").append(asset.getId()).append(")\n");
+                    }
+                    body.append("Original Issue: ").append(record.getIssueDescription()).append("\n");
+                    if (serviceProvider != null && !serviceProvider.isBlank()) {
+                        body.append("Service Provider: ").append(serviceProvider).append("\n");
+                    }
+                    if (maintenanceCost != null) {
+                        body.append("Cost: ").append(maintenanceCost).append("\n");
+                    }
+                    body.append("Resolution Date: ").append(resolutionDate).append("\n\n");
+                    body.append("You can view details here: ")
+                            .append(appBaseUrl.replaceAll("/+$", ""))
+                            .append("/employee/dashboard")
+                            .append("\n\nRegards,\nFAMS Notification Service\n");
+                    try {
+                        emailService.sendEmail(to, subject, body.toString());
+                    } catch (Exception ex) {
+                        System.err.println("Failed to send maintenance resolution notification to " + to + ": " + ex.getMessage());
+                    }
+                });
+            }
+        } catch (Exception ex) {
+            System.err.println("Failed to send maintenance resolution notification: " + ex.getMessage());
+        }
 
         log.info("Resolved employee maintenance request {} (asset {})",
                 recordId, record.getAsset() == null ? "n/a" : record.getAsset().getId());
