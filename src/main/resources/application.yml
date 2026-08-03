@@ -71,7 +71,7 @@ fams:
     # Refresh the local synced Keycloak user snapshot every 5 minutes by default.
     interval-ms: ${FAMS_USER_SYNC_INTERVAL_MS:300000}
   company-structure:
-    base-url: ${COMPANY_STRUCTURE_BASE_URL:https://justhumanresource-production.up.railway.app/}
+    base-url: ${COMPANY_STRUCTURE_BASE_URL:https://justhr2-dvhhe2e3bvfgc4fq.westus3-01.azurewebsites.net/}
     company-id: 1
     sync-interval-ms: ${COMPANY_STRUCTURE_SYNC_INTERVAL_MS:21600000}
     connect-timeout-ms: ${COMPANY_STRUCTURE_CONNECT_TIMEOUT_MS:5000}
