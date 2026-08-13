@@ -7,7 +7,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "depreciation_postings")
+@Table(name = "depreciation_postings",
+        indexes = {
+                @Index(name = "idx_depreciation_posting_asset_period", columnList = "assetId,depreciationPeriod"),
+                @Index(name = "idx_depreciation_posting_status", columnList = "status")
+        })
 public class DepreciationPosting {
 
     @Id
@@ -36,6 +40,19 @@ public class DepreciationPosting {
     // Depreciation period (e.g., 2024-Q1, 2024-12)
     @Column(nullable = false, length = 32)
     private String depreciationPeriod;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DepreciationPeriodType periodType = DepreciationPeriodType.MONTHLY;
+
+    @Column(nullable = false)
+    private Integer periodNumber = 1;
+
+    @Column(nullable = false)
+    private LocalDate periodStartDate;
+
+    @Column(nullable = false)
+    private LocalDate periodEndDate;
 
     // The fiscal year for this entry
     @Column(nullable = false)
@@ -68,6 +85,13 @@ public class DepreciationPosting {
     // Whether this asset is fully depreciated
     @Column(nullable = false)
     private Boolean fullyDepreciated = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DepreciationPostingStatus status = DepreciationPostingStatus.POSTED;
+
+    @Column
+    private Long journalBatchId;
 
     // Useful life in years at time of calculation
     @Column(nullable = false)
@@ -146,6 +170,38 @@ public class DepreciationPosting {
         this.depreciationPeriod = depreciationPeriod;
     }
 
+    public DepreciationPeriodType getPeriodType() {
+        return periodType;
+    }
+
+    public void setPeriodType(DepreciationPeriodType periodType) {
+        this.periodType = periodType;
+    }
+
+    public Integer getPeriodNumber() {
+        return periodNumber;
+    }
+
+    public void setPeriodNumber(Integer periodNumber) {
+        this.periodNumber = periodNumber;
+    }
+
+    public LocalDate getPeriodStartDate() {
+        return periodStartDate;
+    }
+
+    public void setPeriodStartDate(LocalDate periodStartDate) {
+        this.periodStartDate = periodStartDate;
+    }
+
+    public LocalDate getPeriodEndDate() {
+        return periodEndDate;
+    }
+
+    public void setPeriodEndDate(LocalDate periodEndDate) {
+        this.periodEndDate = periodEndDate;
+    }
+
     public Integer getFiscalYear() {
         return fiscalYear;
     }
@@ -208,6 +264,22 @@ public class DepreciationPosting {
 
     public void setFullyDepreciated(Boolean fullyDepreciated) {
         this.fullyDepreciated = fullyDepreciated;
+    }
+
+    public DepreciationPostingStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(DepreciationPostingStatus status) {
+        this.status = status;
+    }
+
+    public Long getJournalBatchId() {
+        return journalBatchId;
+    }
+
+    public void setJournalBatchId(Long journalBatchId) {
+        this.journalBatchId = journalBatchId;
     }
 
     public Integer getUsefulLifeYears() {

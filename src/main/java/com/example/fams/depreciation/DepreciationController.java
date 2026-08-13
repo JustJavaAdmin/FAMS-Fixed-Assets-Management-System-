@@ -249,6 +249,65 @@ public class DepreciationController {
         }
     }
 
+    @PostMapping("/period/{period}/approve")
+    public ResponseEntity<Map<String, Object>> approveDepreciationPeriod(@PathVariable String period) {
+        try {
+            int approvedCount = depreciationService.approveDepreciationPeriod(period);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("period", period);
+            response.put("approvedCount", approvedCount);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return badRequest("Error approving depreciation period: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/period/{period}/post")
+    public ResponseEntity<Map<String, Object>> postDepreciationPeriod(@PathVariable String period) {
+        try {
+            AccountingJournalBatch batch = depreciationService.postDepreciationPeriod(period);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("period", period);
+            response.put("journalBatchId", batch.getId());
+            response.put("batchNumber", batch.getBatchNumber());
+            response.put("totalDebit", batch.getTotalDebit());
+            response.put("totalCredit", batch.getTotalCredit());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return badRequest("Error posting depreciation period: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/period/{period}/lock")
+    public ResponseEntity<Map<String, Object>> lockDepreciationPeriod(@PathVariable String period) {
+        try {
+            int lockedCount = depreciationService.lockDepreciationPeriod(period);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("period", period);
+            response.put("lockedCount", lockedCount);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return badRequest("Error locking depreciation period: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/period/{period}/reverse")
+    public ResponseEntity<Map<String, Object>> reverseDepreciationPeriod(@PathVariable String period) {
+        try {
+            int reversedCount = depreciationService.reverseDepreciationPeriod(period);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("period", period);
+            response.put("reversedCount", reversedCount);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return badRequest("Error reversing depreciation period: " + e.getMessage());
+        }
+    }
+
     /**
      * Get depreciation report for a period
      */
