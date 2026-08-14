@@ -368,17 +368,21 @@ public class DepreciationService {
 
     @Transactional
     public AccountingJournalBatch postDepreciationPeriod(String depreciationPeriod) {
-        List<DepreciationPosting> approvedPostings = postingRepository.findByDepreciationPeriodOrderByAssetCode(depreciationPeriod)
+        List<DepreciationPosting> postings = postingRepository.findByDepreciationPeriodOrderByAssetCode(depreciationPeriod)
                 .stream()
-                .filter(p -> p.getStatus() == DepreciationPostingStatus.APPROVED)
+                .filter(p -> p.getStatus() != DepreciationPostingStatus.REVERSED)
                 .toList();
-        if (approvedPostings.isEmpty()) {
-            throw new IllegalStateException("No approved depreciation postings found for period " + depreciationPeriod);
+        if (postings.isEmpty()) {
+            throw new IllegalStateException("No depreciation postings found for period " + depreciationPeriod);
+        }
+        boolean allApproved = postings.stream().allMatch(p -> p.getStatus() == DepreciationPostingStatus.APPROVED);
+        if (!allApproved) {
+            throw new IllegalStateException("All depreciation records must be approved before posting period " + depreciationPeriod);
         }
 
-        DepreciationPosting first = approvedPostings.getFirst();
+        DepreciationPosting first = postings.getFirst();
         DepreciationPeriod period = DepreciationPeriod.from(depreciationPeriod, first.getPeriodEndDate());
-        return createAccountingBatch(period, approvedPostings);
+        return createAccountingBatch(period, postings);
     }
 
     @Transactional
@@ -391,6 +395,9 @@ public class DepreciationService {
                 locked++;
             }
         }
+        if (locked == 0) {
+            throw new IllegalStateException("No posted depreciation records found for period " + depreciationPeriod);
+        }
         postingRepository.saveAll(postings);
         return locked;
     }
@@ -398,12 +405,20 @@ public class DepreciationService {
     @Transactional
     public int reverseDepreciationPeriod(String depreciationPeriod) {
         List<DepreciationPosting> postings = postingRepository.findByDepreciationPeriodOrderByAssetCode(depreciationPeriod);
+        boolean hasLockedRecords = postings.stream().anyMatch(p -> p.getStatus() == DepreciationPostingStatus.LOCKED);
+        if (hasLockedRecords) {
+            throw new IllegalStateException("Locked depreciation periods cannot be reversed");
+        }
+
         int reversed = 0;
         for (DepreciationPosting posting : postings) {
-            if (posting.getStatus() == DepreciationPostingStatus.POSTED || posting.getStatus() == DepreciationPostingStatus.LOCKED) {
+            if (posting.getStatus() == DepreciationPostingStatus.POSTED) {
                 posting.setStatus(DepreciationPostingStatus.REVERSED);
                 reversed++;
             }
+        }
+        if (reversed == 0) {
+            throw new IllegalStateException("No posted depreciation records found for period " + depreciationPeriod);
         }
         postingRepository.saveAll(postings);
         journalBatchRepository.findBySourceModuleAndSourcePeriod(SOURCE_MODULE, depreciationPeriod)
@@ -455,12 +470,14 @@ public class DepreciationService {
                     posting.getDepreciationCharge(), BigDecimal.ZERO));
             lines.add(journalLine(savedBatch.getId(), posting, ACCUMULATED_DEPRECIATION_ACCOUNT, ACCUMULATED_DEPRECIATION_NAME,
                     BigDecimal.ZERO, posting.getDepreciationCharge()));
+        }
+        for (DepreciationPosting posting : postings) {
             posting.setJournalBatchId(savedBatch.getId());
             posting.setStatus(DepreciationPostingStatus.POSTED);
         }
 
         journalLineRepository.saveAll(lines);
-        postingRepository.saveAll(chargeablePostings);
+        postingRepository.saveAll(postings);
         return savedBatch;
     }
 

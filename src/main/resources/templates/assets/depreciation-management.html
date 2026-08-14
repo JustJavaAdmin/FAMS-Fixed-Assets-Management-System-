@@ -336,8 +336,8 @@
                 </div>
                 <p id="periodReviewSummary" class="text-body-default text-secondary">Run depreciation to create draft records for review.</p>
             </div>
-            <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
-                <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="flex flex-col gap-3">
+                <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 text-center">
                     <div class="bg-surface-canvas rounded-lg px-3 py-2">
                         <p class="text-label-small text-secondary">Draft</p>
                         <p id="periodDraftCount" class="font-technical-data text-on-surface">0</p>
@@ -347,15 +347,44 @@
                         <p id="periodApprovedCount" class="font-technical-data text-on-surface">0</p>
                     </div>
                     <div class="bg-surface-canvas rounded-lg px-3 py-2">
+                        <p class="text-label-small text-secondary">Posted</p>
+                        <p id="periodPostedCount" class="font-technical-data text-on-surface">0</p>
+                    </div>
+                    <div class="bg-surface-canvas rounded-lg px-3 py-2">
+                        <p class="text-label-small text-secondary">Locked</p>
+                        <p id="periodLockedCount" class="font-technical-data text-on-surface">0</p>
+                    </div>
+                    <div class="bg-surface-canvas rounded-lg px-3 py-2">
+                        <p class="text-label-small text-secondary">Reversed</p>
+                        <p id="periodReversedCount" class="font-technical-data text-on-surface">0</p>
+                    </div>
+                    <div class="bg-surface-canvas rounded-lg px-3 py-2">
                         <p class="text-label-small text-secondary">Total</p>
                         <p id="periodTotalCount" class="font-technical-data text-on-surface">0</p>
                     </div>
                 </div>
-                <button id="approvePeriodBtn" disabled
-                        class="h-[38px] px-4 bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span class="material-symbols-outlined text-[18px]">verified</span>
-                    Approve Period
-                </button>
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                    <button id="approvePeriodBtn" disabled
+                            class="h-[38px] px-4 bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="material-symbols-outlined text-[18px]">verified</span>
+                        Approve Period
+                    </button>
+                    <button id="postLedgerBtn" disabled
+                            class="h-[38px] px-4 bg-status-info text-white rounded-lg font-body-medium hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="material-symbols-outlined text-[18px]">account_balance</span>
+                        Post to Ledger
+                    </button>
+                    <button id="lockPeriodBtn" disabled
+                            class="h-[38px] px-4 bg-on-surface text-surface-card rounded-lg font-body-medium hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="material-symbols-outlined text-[18px]">lock</span>
+                        Lock Period
+                    </button>
+                    <button id="reversePeriodBtn" disabled
+                            class="h-[38px] px-4 bg-error text-white rounded-lg font-body-medium hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="material-symbols-outlined text-[18px]">undo</span>
+                        Reverse Period
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -489,19 +518,20 @@
         </div><!-- /sidebar-grid -->
     </div><!-- /main-grid -->
 
-    <div id="approvalConfirmModal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div id="periodActionModal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-surface-card rounded-xl shadow-lg max-w-md w-full border border-border-default">
             <div class="p-5 border-b border-border-default flex items-center gap-3">
-                <span class="material-symbols-outlined text-primary">verified</span>
-                <h3 class="font-section-header text-section-header text-on-surface">Approve Depreciation Period</h3>
+                <span id="periodActionIcon" class="material-symbols-outlined text-primary">verified</span>
+                <h3 id="periodActionTitle" class="font-section-header text-section-header text-on-surface">Approve Depreciation Period</h3>
             </div>
             <div class="p-5 space-y-4">
-                <p id="approvalConfirmText" class="text-body-default text-secondary">Approve the selected draft depreciation records?</p>
+                <p id="periodActionText" class="text-body-default text-secondary">Approve the selected draft depreciation records?</p>
+                <div id="periodActionResult" class="hidden bg-surface-canvas rounded-lg p-3 text-label-small text-secondary"></div>
                 <div class="flex gap-2 justify-end">
-                    <button id="cancelApprovalBtn" class="h-[38px] px-4 bg-surface-card border border-border-default text-on-surface rounded-lg font-body-medium hover:bg-surface-canvas transition-all">Cancel</button>
-                    <button id="confirmApprovalBtn" class="h-[38px] px-4 bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all flex items-center gap-2">
+                    <button id="cancelPeriodActionBtn" class="h-[38px] px-4 bg-surface-card border border-border-default text-on-surface rounded-lg font-body-medium hover:bg-surface-canvas transition-all">Cancel</button>
+                    <button id="confirmPeriodActionBtn" class="h-[38px] px-4 bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all flex items-center gap-2">
                         <span class="material-symbols-outlined text-[18px]">check_circle</span>
-                        Approve
+                        Confirm
                     </button>
                 </div>
             </div>
@@ -803,6 +833,9 @@
             const summary = document.getElementById('periodReviewSummary');
             const draftCountEl = document.getElementById('periodDraftCount');
             const approvedCountEl = document.getElementById('periodApprovedCount');
+            const postedCountEl = document.getElementById('periodPostedCount');
+            const lockedCountEl = document.getElementById('periodLockedCount');
+            const reversedCountEl = document.getElementById('periodReversedCount');
             const totalCountEl = document.getElementById('periodTotalCount');
             if (!approveBtn || !statusBadge || !summary) return;
 
@@ -814,19 +847,25 @@
             }, {});
             const draftCount = statusCounts.DRAFT || 0;
             const approvedCount = statusCounts.APPROVED || 0;
+            const postedCount = statusCounts.POSTED || 0;
+            const lockedCount = statusCounts.LOCKED || 0;
+            const reversedCount = statusCounts.REVERSED || 0;
             const totalCount = postings.length;
             const totalCharge = postings.reduce((sum, p) => sum + parseFloat(p.depreciationCharge || 0), 0);
             const dominantStatus = resolvePeriodStatus(statusCounts, totalCount);
 
             draftCountEl.textContent = draftCount;
             approvedCountEl.textContent = approvedCount;
+            postedCountEl.textContent = postedCount;
+            lockedCountEl.textContent = lockedCount;
+            reversedCountEl.textContent = reversedCount;
             totalCountEl.textContent = totalCount;
 
             if (!period || totalCount === 0) {
                 statusBadge.className = 'px-2 py-0.5 rounded-full bg-surface-canvas text-secondary text-badge-label whitespace-nowrap';
                 statusBadge.textContent = 'No period selected';
                 summary.textContent = 'Run depreciation to create draft records for review.';
-                approveBtn.disabled = true;
+                updatePeriodActionButtons(statusCounts, totalCount);
                 return;
             }
 
@@ -834,7 +873,25 @@
             statusBadge.className = `px-2 py-0.5 rounded-full ${badge.color} text-badge-label whitespace-nowrap`;
             statusBadge.textContent = `${period}: ${badge.label}`;
             summary.textContent = `Review ${totalCount} posting${totalCount !== 1 ? 's' : ''} for ${period}. Total depreciation charge: ${formatCurrency(totalCharge)}.`;
-            approveBtn.disabled = draftCount === 0;
+            updatePeriodActionButtons(statusCounts, totalCount);
+        }
+
+        function updatePeriodActionButtons(statusCounts, totalCount) {
+            const draftCount = statusCounts.DRAFT || 0;
+            const approvedCount = statusCounts.APPROVED || 0;
+            const postedCount = statusCounts.POSTED || 0;
+            const lockedCount = statusCounts.LOCKED || 0;
+            const reversedCount = statusCounts.REVERSED || 0;
+
+            const approveBtn = document.getElementById('approvePeriodBtn');
+            const postBtn = document.getElementById('postLedgerBtn');
+            const lockBtn = document.getElementById('lockPeriodBtn');
+            const reverseBtn = document.getElementById('reversePeriodBtn');
+
+            if (approveBtn) approveBtn.disabled = totalCount === 0 || draftCount === 0;
+            if (postBtn) postBtn.disabled = totalCount === 0 || approvedCount !== totalCount;
+            if (lockBtn) lockBtn.disabled = totalCount === 0 || postedCount !== totalCount;
+            if (reverseBtn) reverseBtn.disabled = totalCount === 0 || postedCount !== totalCount || lockedCount > 0 || reversedCount > 0;
         }
 
         function resolvePeriodStatus(statusCounts, totalCount) {
@@ -859,46 +916,107 @@
             return statuses[status] || { label: 'No period selected', color: 'bg-surface-canvas text-secondary' };
         }
 
-        function openApprovalModal() {
+        const PERIOD_ACTIONS = {
+            approve: {
+                title: 'Approve Depreciation Period',
+                icon: 'verified',
+                label: 'Approve',
+                endpoint: 'approve',
+                countStatus: 'DRAFT',
+                message: (period, count) => `Approve ${count} draft depreciation posting${count !== 1 ? 's' : ''} for period ${period}?`,
+                success: (result) => `Approved ${result.approvedCount} depreciation posting${result.approvedCount !== 1 ? 's' : ''} for ${result.period}.`
+            },
+            post: {
+                title: 'Post Depreciation to Ledger',
+                icon: 'account_balance',
+                label: 'Post to Ledger',
+                endpoint: 'post',
+                countStatus: 'APPROVED',
+                message: (period, count) => `Post ${count} approved depreciation posting${count !== 1 ? 's' : ''} for ${period} to the general ledger? Journal entries will debit Depreciation Expense and credit Accumulated Depreciation.`,
+                success: (result) => `Posted ${result.period} to ledger as ${result.batchNumber}. Debit: ${formatCurrency(result.totalDebit)}, Credit: ${formatCurrency(result.totalCredit)}.`,
+                result: (result) => `Journal Batch: ${result.batchNumber}<br>Total Debit: ${formatCurrency(result.totalDebit)}<br>Total Credit: ${formatCurrency(result.totalCredit)}`
+            },
+            lock: {
+                title: 'Lock Depreciation Period',
+                icon: 'lock',
+                label: 'Lock Period',
+                endpoint: 'lock',
+                countStatus: 'POSTED',
+                message: (period, count) => `Lock ${count} posted depreciation record${count !== 1 ? 's' : ''} for ${period}? Locked periods are final and cannot be reversed.`,
+                success: (result) => `Locked ${result.lockedCount} depreciation posting${result.lockedCount !== 1 ? 's' : ''} for ${result.period}.`
+            },
+            reverse: {
+                title: 'Reverse Depreciation Period',
+                icon: 'undo',
+                label: 'Reverse Period',
+                endpoint: 'reverse',
+                countStatus: 'POSTED',
+                message: (period, count) => `Reverse ${count} posted depreciation record${count !== 1 ? 's' : ''} for ${period}? This will mark the accounting journal as reversed and update depreciation records.`,
+                success: (result) => `Reversed ${result.reversedCount} depreciation posting${result.reversedCount !== 1 ? 's' : ''} for ${result.period}.`
+            }
+        };
+
+        function openPeriodActionModal(actionName) {
+            const action = PERIOD_ACTIONS[actionName];
             const period = document.getElementById('periodFilter')?.value || window.__selectedDepreciationPeriod;
-            const draftCount = (window.__allPostings || [])
-                .filter(p => p.depreciationPeriod === period && p.status === 'DRAFT')
+            if (!action || !period) return;
+
+            const actionCount = (window.__allPostings || [])
+                .filter(p => p.depreciationPeriod === period && p.status === action.countStatus)
                 .length;
-            if (!period || draftCount === 0) return;
+            if (actionCount === 0) return;
 
-            window.__approvalRequestPeriod = period;
-            document.getElementById('approvalConfirmText').textContent =
-                `Approve ${draftCount} draft depreciation posting${draftCount !== 1 ? 's' : ''} for period ${period}?`;
-            document.getElementById('approvalConfirmModal').classList.remove('hidden');
+            window.__periodActionRequest = { actionName, period };
+            document.getElementById('periodActionIcon').textContent = action.icon;
+            document.getElementById('periodActionTitle').textContent = action.title;
+            document.getElementById('periodActionText').textContent = action.message(period, actionCount);
+            const confirmBtn = document.getElementById('confirmPeriodActionBtn');
+            confirmBtn.classList.remove('hidden');
+            confirmBtn.lastChild.textContent = action.label;
+            document.getElementById('cancelPeriodActionBtn').textContent = 'Cancel';
+            const resultEl = document.getElementById('periodActionResult');
+            resultEl.classList.add('hidden');
+            resultEl.innerHTML = '';
+            document.getElementById('periodActionModal').classList.remove('hidden');
         }
 
-        function closeApprovalModal() {
-            window.__approvalRequestPeriod = null;
-            document.getElementById('approvalConfirmModal').classList.add('hidden');
+        function closePeriodActionModal() {
+            window.__periodActionRequest = null;
+            document.getElementById('periodActionModal').classList.add('hidden');
         }
 
-        async function approveSelectedPeriod() {
-            const period = window.__approvalRequestPeriod;
-            if (!period) return;
+        async function executeSelectedPeriodAction() {
+            const request = window.__periodActionRequest;
+            if (!request) return;
 
-            const confirmBtn = document.getElementById('confirmApprovalBtn');
+            const action = PERIOD_ACTIONS[request.actionName];
+            const confirmBtn = document.getElementById('confirmPeriodActionBtn');
             confirmBtn.disabled = true;
             confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
             try {
-                const response = await fetch(`/api/depreciation/period/${encodeURIComponent(period)}/approve`, {
+                const response = await fetch(`/api/depreciation/period/${encodeURIComponent(request.period)}/${action.endpoint}`, {
                     method: 'POST'
                 });
                 const result = await response.json();
                 if (!response.ok || !result.success) {
-                    throw new Error(result.message || result.error || 'Approval failed');
+                    throw new Error(result.message || result.error || 'Action failed');
                 }
 
-                closeApprovalModal();
-                showAlert(`Approved ${result.approvedCount} depreciation posting${result.approvedCount !== 1 ? 's' : ''} for ${period}.`, 'success');
+                const resultEl = document.getElementById('periodActionResult');
+                if (action.result) {
+                    resultEl.innerHTML = action.result(result);
+                    resultEl.classList.remove('hidden');
+                    window.__periodActionRequest = null;
+                    confirmBtn.classList.add('hidden');
+                    document.getElementById('cancelPeriodActionBtn').textContent = 'Close';
+                }
+
+                showAlert(action.success(result), 'success');
                 await loadDepreciationDashboard();
+                if (!action.result) closePeriodActionModal();
             } catch (error) {
-                showAlert('Error approving depreciation period: ' + error.message, 'error');
+                showAlert(`Error processing period action: ${error.message}`, 'error');
             } finally {
                 confirmBtn.disabled = false;
                 confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -950,20 +1068,29 @@
             }
 
             const approveBtn = document.getElementById('approvePeriodBtn');
-            if (approveBtn) approveBtn.onclick = openApprovalModal;
+            if (approveBtn) approveBtn.onclick = () => openPeriodActionModal('approve');
 
-            const cancelApprovalBtn = document.getElementById('cancelApprovalBtn');
-            if (cancelApprovalBtn) cancelApprovalBtn.onclick = closeApprovalModal;
+            const postBtn = document.getElementById('postLedgerBtn');
+            if (postBtn) postBtn.onclick = () => openPeriodActionModal('post');
 
-            const approvalModal = document.getElementById('approvalConfirmModal');
-            if (approvalModal) {
-                approvalModal.onclick = (event) => {
-                    if (event.target === approvalModal) closeApprovalModal();
+            const lockBtn = document.getElementById('lockPeriodBtn');
+            if (lockBtn) lockBtn.onclick = () => openPeriodActionModal('lock');
+
+            const reverseBtn = document.getElementById('reversePeriodBtn');
+            if (reverseBtn) reverseBtn.onclick = () => openPeriodActionModal('reverse');
+
+            const cancelPeriodActionBtn = document.getElementById('cancelPeriodActionBtn');
+            if (cancelPeriodActionBtn) cancelPeriodActionBtn.onclick = closePeriodActionModal;
+
+            const periodActionModal = document.getElementById('periodActionModal');
+            if (periodActionModal) {
+                periodActionModal.onclick = (event) => {
+                    if (event.target === periodActionModal) closePeriodActionModal();
                 };
             }
 
-            const confirmApprovalBtn = document.getElementById('confirmApprovalBtn');
-            if (confirmApprovalBtn) confirmApprovalBtn.onclick = approveSelectedPeriod;
+            const confirmPeriodActionBtn = document.getElementById('confirmPeriodActionBtn');
+            if (confirmPeriodActionBtn) confirmPeriodActionBtn.onclick = executeSelectedPeriodAction;
         }
 
         // Apply the four filters and re-render the table + sidebar from the result.

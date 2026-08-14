@@ -149,6 +149,61 @@ class DepreciationServiceTest {
         assertEquals(2, lines.size());
         assertEquals(new BigDecimal("8.33"), lines.stream().map(AccountingJournalLine::getDebit).reduce(BigDecimal.ZERO, BigDecimal::add));
         assertEquals(new BigDecimal("8.33"), lines.stream().map(AccountingJournalLine::getCredit).reduce(BigDecimal.ZERO, BigDecimal::add));
+        assertEquals(DepreciationPostingStatus.POSTED, approvedPosting.getStatus());
+    }
+
+    @Test
+    void postingRejectsMixedStatusPeriod() {
+        DepreciationPosting approvedPosting = posting(1L, "2026-01", LocalDate.of(2026, 1, 31), new BigDecimal("8.33"), DepreciationPostingStatus.APPROVED);
+        DepreciationPosting draftPosting = posting(2L, "2026-01", LocalDate.of(2026, 1, 31), new BigDecimal("10.00"), DepreciationPostingStatus.DRAFT);
+
+        when(postingRepository.findByDepreciationPeriodOrderByAssetCode("2026-01")).thenReturn(List.of(approvedPosting, draftPosting));
+
+        assertThrows(IllegalStateException.class, () -> service.postDepreciationPeriod("2026-01"));
+        verify(journalBatchRepository, never()).save(any(AccountingJournalBatch.class));
+    }
+
+    @Test
+    void lockPeriodUpdatesPostedRecords() {
+        DepreciationPosting posted = posting(1L, "2026-01", LocalDate.of(2026, 1, 31), new BigDecimal("8.33"), DepreciationPostingStatus.POSTED);
+
+        when(postingRepository.findByDepreciationPeriodOrderByAssetCode("2026-01")).thenReturn(List.of(posted));
+
+        int lockedCount = service.lockDepreciationPeriod("2026-01");
+
+        assertEquals(1, lockedCount);
+        assertEquals(DepreciationPostingStatus.LOCKED, posted.getStatus());
+        verify(postingRepository).saveAll(List.of(posted));
+    }
+
+    @Test
+    void reversePeriodUpdatesPostedRecordsAndJournalBatch() {
+        DepreciationPosting posted = posting(1L, "2026-01", LocalDate.of(2026, 1, 31), new BigDecimal("8.33"), DepreciationPostingStatus.POSTED);
+        AccountingJournalBatch batch = new AccountingJournalBatch();
+        batch.setBatchNumber("DEP-2026-01-20260814170000");
+        batch.setSourcePeriod("2026-01");
+        batch.setEntryDate(LocalDate.of(2026, 1, 31));
+        batch.setStatus(AccountingJournalStatus.POSTED);
+
+        when(postingRepository.findByDepreciationPeriodOrderByAssetCode("2026-01")).thenReturn(List.of(posted));
+        when(journalBatchRepository.findBySourceModuleAndSourcePeriod("DEPRECIATION", "2026-01")).thenReturn(Optional.of(batch));
+
+        int reversedCount = service.reverseDepreciationPeriod("2026-01");
+
+        assertEquals(1, reversedCount);
+        assertEquals(DepreciationPostingStatus.REVERSED, posted.getStatus());
+        assertEquals(AccountingJournalStatus.REVERSED, batch.getStatus());
+        verify(postingRepository).saveAll(List.of(posted));
+    }
+
+    @Test
+    void reverseLockedPeriodIsRejected() {
+        DepreciationPosting locked = posting(1L, "2026-01", LocalDate.of(2026, 1, 31), new BigDecimal("8.33"), DepreciationPostingStatus.LOCKED);
+
+        when(postingRepository.findByDepreciationPeriodOrderByAssetCode("2026-01")).thenReturn(List.of(locked));
+
+        assertThrows(IllegalStateException.class, () -> service.reverseDepreciationPeriod("2026-01"));
+        verify(postingRepository, never()).saveAll(anyList());
     }
 
     private Asset asset(Long id, String code, LocalDate purchaseDate, String status, String category, BigDecimal cost) {
