@@ -94,11 +94,7 @@ public class AssetRequestService {
                 for (SyncedUser manager : managers) {
                     String to = manager.getEmail();
                     if (to == null || to.isBlank()) continue;
-                    try {
-                        emailService.sendEmail(to, subject, body.toString());
-                    } catch (Exception ex) {
-                        System.err.println("Failed to send asset-request notification to " + to + ": " + ex.getMessage());
-                    }
+                    emailService.sendEmailFireAndForget(to, subject, body.toString());
                 }
             }
         } catch (Exception ex) {
@@ -177,7 +173,7 @@ public class AssetRequestService {
                         .append(appBaseUrl.replaceAll("/+$", ""))
                         .append("/employee/asset-requests")
                         .append("\n\nRegards,\nFAMS Notification Service\n");
-                emailService.sendEmail(to, subject, body.toString());
+                emailService.sendEmailFireAndForget(to, subject, body.toString());
             }
         } catch (Exception ex) {
             System.err.println("Failed to send approval notification: " + ex.getMessage());
@@ -225,7 +221,7 @@ public class AssetRequestService {
                         .append(appBaseUrl.replaceAll("/+$", ""))
                         .append("/employee/asset-requests")
                         .append("\n\nRegards,\nFAMS Notification Service\n");
-                emailService.sendEmail(to, subject, body.toString());
+                emailService.sendEmailFireAndForget(to, subject, body.toString());
             }
         } catch (Exception ex) {
             System.err.println("Failed to send rejection notification: " + ex.getMessage());

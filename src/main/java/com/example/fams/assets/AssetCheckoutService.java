@@ -89,11 +89,7 @@ public class AssetCheckoutService {
                 for (SyncedUser manager : managers) {
                     String to = manager.getEmail();
                     if (to == null || to.isBlank()) continue;
-                    try {
-                        emailService.sendEmail(to, subject, body.toString());
-                    } catch (Exception ex) {
-                        System.err.println("Failed to send checkout notification to " + to + ": " + ex.getMessage());
-                    }
+                    emailService.sendEmailFireAndForget(to, subject, body.toString());
                 }
             }
         } catch (Exception ex) {
@@ -143,11 +139,7 @@ public class AssetCheckoutService {
                         .append(appBaseUrl.replaceAll("/+$", ""))
                         .append("/employee/checkout-requests")
                         .append("\n\nRegards,\nFAMS Notification Service\n");
-                try {
-                    emailService.sendEmail(to, subject, body.toString());
-                } catch (Exception ex) {
-                    System.err.println("Failed to send checkout approval notification to " + to + ": " + ex.getMessage());
-                }
+                emailService.sendEmailFireAndForget(to, subject, body.toString());
             } else {
                 System.out.println("[CHECKOUT APPROVE] No email stored for requester (checkoutId=" + checkout.getId() + ")");
             }
@@ -195,11 +187,7 @@ public class AssetCheckoutService {
                         .append(appBaseUrl.replaceAll("/+$", ""))
                         .append("/employee/checkout-requests")
                         .append("\n\nRegards,\nFAMS Notification Service\n");
-                try {
-                    emailService.sendEmail(to, subject, body.toString());
-                } catch (Exception ex) {
-                    System.err.println("Failed to send checkout rejection notification to " + to + ": " + ex.getMessage());
-                }
+                emailService.sendEmailFireAndForget(to, subject, body.toString());
             } else {
                 System.out.println("[CHECKOUT REJECT] No email stored for requester (checkoutId=" + checkout.getId() + ")");
             }
@@ -262,11 +250,7 @@ public class AssetCheckoutService {
                         .append(appBaseUrl.replaceAll("/+$", ""))
                         .append("/employee/checkout-requests")
                         .append("\n\nRegards,\nFAMS Notification Service\n");
-                try {
-                    emailService.sendEmail(to, subject, body.toString());
-                } catch (Exception ex) {
-                    System.err.println("Failed to send return rejection notification to " + to + ": " + ex.getMessage());
-                }
+                emailService.sendEmailFireAndForget(to, subject, body.toString());
             } else {
                 System.out.println("[RETURN REJECT] No email stored for employee (checkoutId=" + checkout.getId() + ")");
             }
@@ -356,11 +340,7 @@ public class AssetCheckoutService {
                 for (SyncedUser manager : managers) {
                     String to = manager.getEmail();
                     if (to == null || to.isBlank()) continue;
-                    try {
-                        emailService.sendEmail(to, subject, body.toString());
-                    } catch (Exception ex) {
-                        System.err.println("Failed to send return request notification to " + to + ": " + ex.getMessage());
-                    }
+                    emailService.sendEmailFireAndForget(to, subject, body.toString());
                 }
             }
         } catch (Exception ex) {

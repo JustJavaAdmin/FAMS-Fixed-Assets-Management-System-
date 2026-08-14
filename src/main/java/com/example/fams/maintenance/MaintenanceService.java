@@ -232,11 +232,7 @@ public class MaintenanceService {
                     for (SyncedUser manager : managers) {
                         String to = manager.getEmail();
                         if (to == null || to.isBlank()) continue;
-                        try {
-                            emailService.sendEmail(to, subject, body.toString());
-                        } catch (Exception ex) {
-                            System.err.println("Failed to send maintenance notification to " + to + ": " + ex.getMessage());
-                        }
+                        emailService.sendEmailFireAndForget(to, subject, body.toString());
                     }
                 }
             } catch (Exception ex) {
@@ -437,12 +433,8 @@ public class MaintenanceService {
             for (SyncedUser manager : managers) {
                 String to = manager.getEmail();
                 if (to == null || to.isBlank()) continue;
-                try {
-                    emailService.sendEmail(to, subject, body.toString());
-                    log.debug("Sent {} reminder to {}", isOverdue ? "overdue" : "upcoming", to);
-                } catch (Exception ex) {
-                    log.error("Failed to send maintenance reminder to {}: {}", to, ex.getMessage());
-                }
+                emailService.sendEmailFireAndForget(to, subject, body.toString());
+                log.debug("Queued {} reminder to {}", isOverdue ? "overdue" : "upcoming", to);
             }
         } catch (Exception ex) {
             log.error("Failed to send maintenance reminder for schedule {}: {}", schedule.getId(), ex.getMessage(), ex);
@@ -545,11 +537,7 @@ public class MaintenanceService {
             for (SyncedUser manager : managers) {
                 String to = manager.getEmail();
                 if (to == null || to.isBlank()) continue;
-                try {
-                    emailService.sendEmail(to, subject, body.toString());
-                } catch (Exception ex) {
-                    log.error("Failed to send task reminder to {}: {}", to, ex.getMessage());
-                }
+                emailService.sendEmailFireAndForget(to, subject, body.toString());
             }
         } catch (Exception ex) {
             log.error("Failed to send maintenance task reminder for task {}: {}", task.getId(), ex.getMessage(), ex);
@@ -657,11 +645,7 @@ public class MaintenanceService {
                             .append(appBaseUrl.replaceAll("/+$", ""))
                             .append("/employee/dashboard")
                             .append("\n\nRegards,\nFAMS Notification Service\n");
-                    try {
-                        emailService.sendEmail(to, subject, body.toString());
-                    } catch (Exception ex) {
-                        System.err.println("Failed to send maintenance resolution notification to " + to + ": " + ex.getMessage());
-                    }
+                    emailService.sendEmailFireAndForget(to, subject, body.toString());
             } else {
                 System.out.println("[MAINTENANCE RESOLVE] No email stored for requester (recordId=" + record.getId() + ")");
             }

@@ -149,11 +149,7 @@ public class AssetLifecycleService {
                 for (SyncedUser manager : managers) {
                     String to = manager.getEmail();
                     if (to == null || to.isBlank()) continue;
-                    try {
-                        emailService.sendEmail(to, subject, body.toString());
-                    } catch (Exception ex) {
-                        System.err.println("Failed to send lifecycle request notification to " + to + ": " + ex.getMessage());
-                    }
+                    emailService.sendEmailFireAndForget(to, subject, body.toString());
                 }
             }
         } catch (Exception ex) {
@@ -375,14 +371,10 @@ public class AssetLifecycleService {
                         .append(appBaseUrl.replaceAll("/+$", ""))
                         .append("/employee/dashboard")
                         .append("\n\nRegards,\nFAMS Notification Service\n");
-                try {
-                    emailService.sendEmail(to, subject, body.toString());
-                } catch (Exception ex) {
-                    System.err.println("Failed to send lifecycle decision notification to " + to + ": " + ex.getMessage());
-                }
+                emailService.sendEmailFireAndForget(to, subject, body.toString());
             });
         } catch (Exception ex) {
-            System.err.println("Failed to send lifecycle decision notification: " + ex.getMessage());
+            log.warn("Failed to notify requester of lifecycle decision for workflowId={}", workflowId, ex);
         }
 
         return saved;
