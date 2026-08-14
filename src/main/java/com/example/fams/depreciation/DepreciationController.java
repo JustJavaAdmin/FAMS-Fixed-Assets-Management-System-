@@ -1,7 +1,9 @@
 package com.example.fams.depreciation;
 
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -356,6 +358,47 @@ public class DepreciationController {
             return ResponseEntity.ok(depreciationService.getAllPostings());
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/journals")
+    public ResponseEntity<List<AccountingJournalBatchReport>> getAccountingJournalBatches(
+            @RequestParam(required = false) String period,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) AccountingJournalStatus status,
+            @RequestParam(required = false) String batchNumber) {
+        try {
+            return ResponseEntity.ok(depreciationService.getDepreciationJournalBatches(period, fromDate, toDate, status, batchNumber));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/journals/{batchId}/lines")
+    public ResponseEntity<List<AccountingJournalLineReport>> getAccountingJournalLines(@PathVariable Long batchId) {
+        try {
+            return ResponseEntity.ok(depreciationService.getDepreciationJournalLines(batchId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping(value = "/journals/export", produces = "text/csv")
+    public ResponseEntity<String> exportAccountingJournals(
+            @RequestParam(required = false) String period,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) AccountingJournalStatus status,
+            @RequestParam(required = false) String batchNumber) {
+        try {
+            String csv = depreciationService.exportDepreciationJournalCsv(period, fromDate, toDate, status, batchNumber);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=depreciation_journal_export.csv")
+                    .contentType(MediaType.parseMediaType("text/csv"))
+                    .body(csv);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error exporting depreciation journals: " + e.getMessage());
         }
     }
 

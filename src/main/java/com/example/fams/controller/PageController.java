@@ -60,6 +60,11 @@ public class PageController {
         return "assets/depreciation-history";
     }
 
+    @GetMapping("/depreciation/accounting-journals")
+    public String depreciationAccountingJournals() {
+        return "assets/depreciation-accounting-journals";
+    }
+
     @GetMapping("/depreciation/run")
     public String depreciationRun() {
         return "assets/depreciation-run";

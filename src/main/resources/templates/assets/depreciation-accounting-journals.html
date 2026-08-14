@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html class="light" lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layouts/app}">
+<head>
+    <title>Depreciation Accounting Journals | JustJava FAMS</title>
+    <style>
+        .journal-table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .journal-table-wrapper table {
+            min-width: 980px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 150px;
+        }
+
+        @media (max-width: 639px) {
+            .filter-group {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<main id="main-content" class="space-y-6" layout:fragment="content">
+    <div class="flex flex-col lg:flex-row lg:justify-between lg:items-end gap-4">
+        <div>
+            <h2 class="font-page-title text-page-title text-on-background">Depreciation Accounting Journals</h2>
+            <p class="text-body-default text-secondary">Review posted depreciation journal batches and export debit/credit lines for external accounting upload.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="/depreciation"
+               class="h-[38px] px-4 bg-surface-card border border-border-default text-on-surface rounded-lg font-body-medium hover:bg-surface-canvas transition-all flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                Back
+            </a>
+            <button id="downloadCsvBtn"
+                    class="h-[38px] px-4 bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">download</span>
+                Download CSV
+            </button>
+        </div>
+    </div>
+
+    <div id="alertContainer" class="fixed top-24 right-4 z-40 space-y-2 max-w-sm"></div>
+
+    <div class="bg-surface-card border border-border-default rounded-xl p-4">
+        <div class="flex flex-wrap gap-3 items-end">
+            <div class="filter-group">
+                <label class="text-label-small text-secondary">Period</label>
+                <select id="periodFilter" class="h-[38px] px-3 bg-surface-canvas border border-border-default rounded-lg text-body-default text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                    <option value="">All Periods</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="text-label-small text-secondary">Status</label>
+                <select id="statusFilter" class="h-[38px] px-3 bg-surface-canvas border border-border-default rounded-lg text-body-default text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                    <option value="">All Statuses</option>
+                    <option value="POSTED">Posted</option>
+                    <option value="REVERSED">Reversed</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="text-label-small text-secondary">From Date</label>
+                <input id="fromDateFilter" type="date" class="h-[38px] px-3 bg-surface-canvas border border-border-default rounded-lg text-body-default text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+            </div>
+            <div class="filter-group">
+                <label class="text-label-small text-secondary">To Date</label>
+                <input id="toDateFilter" type="date" class="h-[38px] px-3 bg-surface-canvas border border-border-default rounded-lg text-body-default text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+            </div>
+            <div class="filter-group flex-1">
+                <label class="text-label-small text-secondary">Batch Number</label>
+                <input id="batchFilter" type="search" placeholder="DEP-2026-08"
+                       class="h-[38px] px-3 bg-surface-canvas border border-border-default rounded-lg text-body-default text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+            </div>
+            <button id="clearFiltersBtn" class="h-[38px] px-4 bg-surface-card border border-border-default text-on-surface rounded-lg font-body-medium hover:bg-surface-canvas transition-all flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">filter_alt_off</span>
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-surface-card p-5 rounded-xl card-shadow border border-border-default">
+            <p class="text-label-small text-secondary uppercase tracking-wider mb-2">Batches</p>
+            <p id="batchCount" class="font-page-title font-bold text-on-surface">0</p>
+        </div>
+        <div class="bg-surface-card p-5 rounded-xl card-shadow border border-border-default">
+            <p class="text-label-small text-secondary uppercase tracking-wider mb-2">Total Debit</p>
+            <p id="totalDebit" class="font-page-title font-bold text-primary">NGN 0.00</p>
+        </div>
+        <div class="bg-surface-card p-5 rounded-xl card-shadow border border-border-default">
+            <p class="text-label-small text-secondary uppercase tracking-wider mb-2">Total Credit</p>
+            <p id="totalCredit" class="font-page-title font-bold text-primary">NGN 0.00</p>
+        </div>
+    </div>
+
+    <div class="bg-surface-card rounded-xl card-shadow border border-border-default overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-border-default flex justify-between items-center gap-3">
+            <h3 class="font-section-header text-section-header text-on-surface">Journal Batches</h3>
+            <span id="showingText" class="text-label-small text-secondary">--</span>
+        </div>
+
+        <div id="loadingState" class="p-8 flex flex-col items-center gap-3">
+            <div class="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
+            <p class="text-body-default text-secondary">Loading accounting journals...</p>
+        </div>
+
+        <div id="emptyState" class="hidden p-10 text-center">
+            <span class="material-symbols-outlined text-[56px] text-secondary opacity-40 mb-3">receipt_long</span>
+            <p class="text-body-default text-secondary">No depreciation accounting journals match the current filters.</p>
+        </div>
+
+        <div id="tableContent" class="hidden journal-table-wrapper">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                <tr class="bg-surface-canvas border-b border-border-default">
+                    <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Batch Number</th>
+                    <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Period</th>
+                    <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Entry Date</th>
+                    <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Debit</th>
+                    <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Credit</th>
+                    <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Lines</th>
+                    <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Status</th>
+                    <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider text-right whitespace-nowrap">Action</th>
+                </tr>
+                </thead>
+                <tbody id="batchTableBody" class="divide-y divide-border-default"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="linesModal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-surface-card rounded-xl shadow-lg max-w-6xl w-full max-h-[86vh] overflow-hidden border border-border-default flex flex-col">
+            <div class="p-5 border-b border-border-default flex justify-between items-center gap-3">
+                <div>
+                    <h3 id="linesModalTitle" class="font-section-header text-section-header text-on-surface">Journal Lines</h3>
+                    <p id="linesModalSubtitle" class="text-label-small text-secondary">--</p>
+                </div>
+                <button id="closeLinesModalBtn" class="text-secondary hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="overflow-auto">
+                <table class="w-full text-left border-collapse min-w-[980px]">
+                    <thead>
+                    <tr class="bg-surface-canvas border-b border-border-default">
+                        <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Asset</th>
+                        <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Account</th>
+                        <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Debit</th>
+                        <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Credit</th>
+                        <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Department</th>
+                        <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Category</th>
+                        <th class="px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Narration</th>
+                    </tr>
+                    </thead>
+                    <tbody id="linesTableBody" class="divide-y divide-border-default"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadJournals();
+            ['periodFilter', 'statusFilter', 'fromDateFilter', 'toDateFilter', 'batchFilter'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('change', loadJournals);
+            });
+            document.getElementById('batchFilter').addEventListener('input', debounce(loadJournals, 300));
+            document.getElementById('clearFiltersBtn').addEventListener('click', clearFilters);
+            document.getElementById('downloadCsvBtn').addEventListener('click', downloadCsv);
+            document.getElementById('closeLinesModalBtn').addEventListener('click', closeLinesModal);
+            document.getElementById('linesModal').addEventListener('click', (event) => {
+                if (event.target.id === 'linesModal') closeLinesModal();
+            });
+        });
+
+        async function loadJournals() {
+            showLoading();
+            try {
+                const response = await fetch('/api/depreciation/journals?' + buildQuery());
+                if (!response.ok) throw new Error('Unable to load accounting journals');
+                const batches = await response.json();
+                window.__journalBatches = batches || [];
+                populatePeriodFilter(window.__journalBatches);
+                renderBatches(window.__journalBatches);
+            } catch (error) {
+                showAlert(error.message, 'error');
+                renderBatches([]);
+            }
+        }
+
+        function populatePeriodFilter(batches) {
+            const selected = document.getElementById('periodFilter').value;
+            const periods = Array.from(new Set((batches || []).map(b => b.sourcePeriod).filter(Boolean))).sort().reverse();
+            const select = document.getElementById('periodFilter');
+            const options = ['<option value="">All Periods</option>'].concat(periods.map(period => `<option value="${escapeHtml(period)}">${escapeHtml(period)}</option>`));
+            select.innerHTML = options.join('');
+            if (selected && periods.includes(selected)) select.value = selected;
+        }
+
+        function renderBatches(batches) {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('batchCount').textContent = batches.length;
+            document.getElementById('totalDebit').textContent = formatCurrency(sum(batches, 'totalDebit'));
+            document.getElementById('totalCredit').textContent = formatCurrency(sum(batches, 'totalCredit'));
+            document.getElementById('showingText').textContent = `Showing ${batches.length} batch${batches.length !== 1 ? 'es' : ''}`;
+
+            if (batches.length === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+                document.getElementById('tableContent').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('tableContent').classList.remove('hidden');
+            const tbody = document.getElementById('batchTableBody');
+            tbody.innerHTML = '';
+            batches.forEach(batch => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-surface-canvas/50 transition-colors';
+                tr.innerHTML = `
+                    <td class="px-5 py-3 font-technical-data text-primary whitespace-nowrap">${escapeHtml(batch.batchNumber)}</td>
+                    <td class="px-5 py-3 text-body-default text-on-surface whitespace-nowrap">${escapeHtml(batch.sourcePeriod)}</td>
+                    <td class="px-5 py-3 text-body-default text-secondary whitespace-nowrap">${formatDate(batch.entryDate)}</td>
+                    <td class="px-5 py-3 font-technical-data text-on-surface whitespace-nowrap">${formatCurrency(batch.totalDebit)}</td>
+                    <td class="px-5 py-3 font-technical-data text-on-surface whitespace-nowrap">${formatCurrency(batch.totalCredit)}</td>
+                    <td class="px-5 py-3 font-technical-data text-secondary whitespace-nowrap">${batch.lineCount || 0}</td>
+                    <td class="px-5 py-3">${statusBadge(batch.status)}</td>
+                    <td class="px-5 py-3 text-right">
+                        <button class="h-[32px] px-3 bg-surface-card border border-border-default text-on-surface rounded-lg text-label-small font-body-medium hover:bg-surface-canvas transition-all" data-batch-id="${batch.id}">
+                            View Lines
+                        </button>
+                    </td>
+                `;
+                tr.querySelector('button').addEventListener('click', () => openLinesModal(batch));
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function openLinesModal(batch) {
+            document.getElementById('linesModalTitle').textContent = batch.batchNumber;
+            document.getElementById('linesModalSubtitle').textContent = `${batch.sourcePeriod} | ${formatDate(batch.entryDate)} | ${formatCurrency(batch.totalDebit)} debit / ${formatCurrency(batch.totalCredit)} credit`;
+            document.getElementById('linesTableBody').innerHTML = `
+                <tr><td class="px-5 py-6 text-center text-secondary" colspan="7">Loading journal lines...</td></tr>
+            `;
+            document.getElementById('linesModal').classList.remove('hidden');
+
+            try {
+                const response = await fetch(`/api/depreciation/journals/${batch.id}/lines`);
+                if (!response.ok) throw new Error('Unable to load journal lines');
+                const lines = await response.json();
+                renderLines(lines || []);
+            } catch (error) {
+                document.getElementById('linesTableBody').innerHTML = `
+                    <tr><td class="px-5 py-6 text-center text-error" colspan="7">${escapeHtml(error.message)}</td></tr>
+                `;
+            }
+        }
+
+        function renderLines(lines) {
+            const tbody = document.getElementById('linesTableBody');
+            tbody.innerHTML = '';
+            lines.forEach(line => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-5 py-3 font-technical-data text-primary whitespace-nowrap">${escapeHtml(line.assetCode)}</td>
+                    <td class="px-5 py-3 text-body-default text-on-surface whitespace-nowrap">${escapeHtml(line.accountCode)} - ${escapeHtml(line.accountName)}</td>
+                    <td class="px-5 py-3 font-technical-data text-on-surface whitespace-nowrap">${formatCurrency(line.debit)}</td>
+                    <td class="px-5 py-3 font-technical-data text-on-surface whitespace-nowrap">${formatCurrency(line.credit)}</td>
+                    <td class="px-5 py-3 text-body-default text-secondary whitespace-nowrap">${escapeHtml(line.department)}</td>
+                    <td class="px-5 py-3 text-body-default text-secondary whitespace-nowrap">${escapeHtml(line.category)}</td>
+                    <td class="px-5 py-3 text-body-default text-secondary">${escapeHtml(line.narration)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function closeLinesModal() {
+            document.getElementById('linesModal').classList.add('hidden');
+        }
+
+        function downloadCsv() {
+            const url = '/api/depreciation/journals/export?' + buildQuery();
+            window.location.href = url;
+        }
+
+        function buildQuery() {
+            const params = new URLSearchParams();
+            const period = document.getElementById('periodFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const fromDate = document.getElementById('fromDateFilter').value;
+            const toDate = document.getElementById('toDateFilter').value;
+            const batchNumber = document.getElementById('batchFilter').value.trim();
+            if (period) params.set('period', period);
+            if (status) params.set('status', status);
+            if (fromDate) params.set('fromDate', fromDate);
+            if (toDate) params.set('toDate', toDate);
+            if (batchNumber) params.set('batchNumber', batchNumber);
+            return params.toString();
+        }
+
+        function clearFilters() {
+            document.getElementById('periodFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('fromDateFilter').value = '';
+            document.getElementById('toDateFilter').value = '';
+            document.getElementById('batchFilter').value = '';
+            loadJournals();
+        }
+
+        function showLoading() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('tableContent').classList.add('hidden');
+        }
+
+        function sum(rows, key) {
+            return rows.reduce((total, row) => total + parseFloat(row[key] || 0), 0);
+        }
+
+        function statusBadge(status) {
+            const color = status === 'REVERSED' ? 'bg-error/10 text-error' : 'bg-status-success/10 text-status-success';
+            return `<span class="px-2 py-0.5 rounded-full ${color} text-badge-label font-badge-label whitespace-nowrap">${escapeHtml(status || 'Unknown')}</span>`;
+        }
+
+        function formatCurrency(value) {
+            const num = parseFloat(value || 0);
+            return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(num);
+        }
+
+        function formatDate(value) {
+            if (!value) return '--';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+            return date.toLocaleDateString();
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function debounce(fn, delay) {
+            let timer;
+            return function () {
+                clearTimeout(timer);
+                timer = setTimeout(fn, delay);
+            };
+        }
+
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            const bg = type === 'error' ? 'bg-error' : 'bg-status-info';
+            alert.className = `${bg} text-white px-4 py-3 rounded-lg shadow-md text-sm font-medium`;
+            alert.textContent = message;
+            container.appendChild(alert);
+            setTimeout(() => alert.remove(), 4000);
+        }
+    </script>
+</main>
+</body>
+</html>

@@ -206,6 +206,40 @@ class DepreciationServiceTest {
         verify(postingRepository, never()).saveAll(anyList());
     }
 
+    @Test
+    void journalReportReturnsDepreciationBatchesWithLineCounts() {
+        AccountingJournalBatch batch = journalBatch(99L, "DEP-2026-01-20260814170000", "2026-01", AccountingJournalStatus.POSTED);
+        AccountingJournalLine debit = journalLine(99L, "AST-001", "6100", "Depreciation Expense", new BigDecimal("8.33"), BigDecimal.ZERO);
+        AccountingJournalLine credit = journalLine(99L, "AST-001", "1705", "Accumulated Depreciation", BigDecimal.ZERO, new BigDecimal("8.33"));
+
+        when(journalBatchRepository.findBySourceModuleOrderByCreatedAtDesc("DEPRECIATION")).thenReturn(List.of(batch));
+        when(journalLineRepository.findByBatchId(99L)).thenReturn(List.of(debit, credit));
+
+        List<AccountingJournalBatchReport> reports = service.getDepreciationJournalBatches("2026-01", null, null, AccountingJournalStatus.POSTED, null);
+
+        assertEquals(1, reports.size());
+        assertEquals("DEP-2026-01-20260814170000", reports.getFirst().getBatchNumber());
+        assertEquals(2, reports.getFirst().getLineCount());
+    }
+
+    @Test
+    void journalExportIncludesDebitAndCreditLines() {
+        AccountingJournalBatch batch = journalBatch(99L, "DEP-2026-01-20260814170000", "2026-01", AccountingJournalStatus.POSTED);
+        AccountingJournalLine debit = journalLine(99L, "AST-001", "6100", "Depreciation Expense", new BigDecimal("8.33"), BigDecimal.ZERO);
+        AccountingJournalLine credit = journalLine(99L, "AST-001", "1705", "Accumulated Depreciation", BigDecimal.ZERO, new BigDecimal("8.33"));
+
+        when(journalBatchRepository.findBySourceModuleOrderByCreatedAtDesc("DEPRECIATION")).thenReturn(List.of(batch));
+        when(journalLineRepository.findByBatchId(99L)).thenReturn(List.of(debit, credit));
+        when(journalLineRepository.findByBatchIdOrderByAssetCodeAscAccountCodeAsc(99L)).thenReturn(List.of(credit, debit));
+        when(journalBatchRepository.findById(99L)).thenReturn(Optional.of(batch));
+
+        String csv = service.exportDepreciationJournalCsv("2026-01", null, null, AccountingJournalStatus.POSTED, null);
+
+        assertTrue(csv.startsWith("Batch Number,Source Period,Entry Date"));
+        assertTrue(csv.contains("6100,Depreciation Expense,8.33,0"));
+        assertTrue(csv.contains("1705,Accumulated Depreciation,0,8.33"));
+    }
+
     private Asset asset(Long id, String code, LocalDate purchaseDate, String status, String category, BigDecimal cost) {
         Asset asset = new Asset();
         ReflectionTestUtils.setField(asset, "id", id);
@@ -262,5 +296,39 @@ class DepreciationServiceTest {
         posting.setUsefulLifeYears(12);
         posting.setStatus(status);
         return posting;
+    }
+
+    private AccountingJournalBatch journalBatch(Long id,
+                                                String batchNumber,
+                                                String sourcePeriod,
+                                                AccountingJournalStatus status) {
+        AccountingJournalBatch batch = new AccountingJournalBatch();
+        ReflectionTestUtils.setField(batch, "id", id);
+        batch.setBatchNumber(batchNumber);
+        batch.setSourcePeriod(sourcePeriod);
+        batch.setEntryDate(LocalDate.of(2026, 1, 31));
+        batch.setTotalDebit(new BigDecimal("8.33"));
+        batch.setTotalCredit(new BigDecimal("8.33"));
+        batch.setStatus(status);
+        return batch;
+    }
+
+    private AccountingJournalLine journalLine(Long batchId,
+                                              String assetCode,
+                                              String accountCode,
+                                              String accountName,
+                                              BigDecimal debit,
+                                              BigDecimal credit) {
+        AccountingJournalLine line = new AccountingJournalLine();
+        line.setBatchId(batchId);
+        line.setAssetCode(assetCode);
+        line.setAccountCode(accountCode);
+        line.setAccountName(accountName);
+        line.setDebit(debit);
+        line.setCredit(credit);
+        line.setDepartment("Finance");
+        line.setCategory("IT Equipment");
+        line.setNarration("Depreciation for " + assetCode + " in 2026-01");
+        return line;
     }
 }

@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -323,11 +324,106 @@ public class DepreciationService {
     }
 
     @Transactional(readOnly = true)
+    public List<AccountingJournalBatchReport> getDepreciationJournalBatches(String period,
+                                                                            LocalDate fromDate,
+                                                                            LocalDate toDate,
+                                                                            AccountingJournalStatus status,
+                                                                            String batchNumber) {
+        String batchFilter = batchNumber == null ? "" : batchNumber.trim().toLowerCase(Locale.ROOT);
+        return journalBatchRepository.findBySourceModuleOrderByCreatedAtDesc(SOURCE_MODULE).stream()
+                .filter(batch -> period == null || period.isBlank() || period.equals(batch.getSourcePeriod()))
+                .filter(batch -> fromDate == null || !batch.getEntryDate().isBefore(fromDate))
+                .filter(batch -> toDate == null || !batch.getEntryDate().isAfter(toDate))
+                .filter(batch -> status == null || status == batch.getStatus())
+                .filter(batch -> batchFilter.isEmpty() || batch.getBatchNumber().toLowerCase(Locale.ROOT).contains(batchFilter))
+                .map(this::toBatchReport)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AccountingJournalLineReport> getDepreciationJournalLines(Long batchId) {
+        AccountingJournalBatch batch = journalBatchRepository.findById(batchId)
+                .filter(b -> SOURCE_MODULE.equals(b.getSourceModule()))
+                .orElseThrow(() -> new IllegalArgumentException("Depreciation journal batch not found: " + batchId));
+
+        return journalLineRepository.findByBatchIdOrderByAssetCodeAscAccountCodeAsc(batch.getId()).stream()
+                .map(line -> toLineReport(batch, line))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public String exportDepreciationJournalCsv(String period,
+                                               LocalDate fromDate,
+                                               LocalDate toDate,
+                                               AccountingJournalStatus status,
+                                               String batchNumber) {
+        List<AccountingJournalBatchReport> batches = getDepreciationJournalBatches(period, fromDate, toDate, status, batchNumber);
+        List<String> lines = new ArrayList<>();
+        lines.add("Batch Number,Source Period,Entry Date,Asset Code,Account Code,Account Name,Debit,Credit,Department,Category,Narration,Status");
+
+        for (AccountingJournalBatchReport batchReport : batches) {
+            AccountingJournalBatch batch = journalBatchRepository.findById(batchReport.getId())
+                    .orElseThrow(() -> new IllegalStateException("Journal batch disappeared during export: " + batchReport.getId()));
+            for (AccountingJournalLine line : journalLineRepository.findByBatchIdOrderByAssetCodeAscAccountCodeAsc(batch.getId())) {
+                List<String> row = List.of(
+                        batch.getBatchNumber(),
+                        batch.getSourcePeriod(),
+                        String.valueOf(batch.getEntryDate()),
+                        safe(line.getAssetCode()),
+                        safe(line.getAccountCode()),
+                        safe(line.getAccountName()),
+                        String.valueOf(defaultDecimal(line.getDebit())),
+                        String.valueOf(defaultDecimal(line.getCredit())),
+                        safe(line.getDepartment()),
+                        safe(line.getCategory()),
+                        safe(line.getNarration()),
+                        String.valueOf(batch.getStatus())
+                );
+                lines.add(row.stream().map(this::escapeCsv).collect(Collectors.joining(",")));
+            }
+        }
+        return String.join("\n", lines);
+    }
+
+    @Transactional(readOnly = true)
     public Optional<String> getLatestDepreciationPeriod() {
         return postingRepository.findAll().stream()
                 .filter(p -> p.getStatus() != DepreciationPostingStatus.REVERSED)
                 .max(Comparator.comparing(DepreciationPosting::getPeriodEndDate, Comparator.nullsLast(Comparator.naturalOrder())))
                 .map(DepreciationPosting::getDepreciationPeriod);
+    }
+
+    private AccountingJournalBatchReport toBatchReport(AccountingJournalBatch batch) {
+        AccountingJournalBatchReport report = new AccountingJournalBatchReport();
+        report.setId(batch.getId());
+        report.setBatchNumber(batch.getBatchNumber());
+        report.setSourcePeriod(batch.getSourcePeriod());
+        report.setEntryDate(batch.getEntryDate());
+        report.setTotalDebit(defaultDecimal(batch.getTotalDebit()));
+        report.setTotalCredit(defaultDecimal(batch.getTotalCredit()));
+        report.setStatus(batch.getStatus());
+        report.setCreatedAt(batch.getCreatedAt());
+        report.setLineCount(journalLineRepository.findByBatchId(batch.getId()).size());
+        return report;
+    }
+
+    private AccountingJournalLineReport toLineReport(AccountingJournalBatch batch, AccountingJournalLine line) {
+        AccountingJournalLineReport report = new AccountingJournalLineReport();
+        report.setId(line.getId());
+        report.setBatchId(batch.getId());
+        report.setBatchNumber(batch.getBatchNumber());
+        report.setSourcePeriod(batch.getSourcePeriod());
+        report.setEntryDate(batch.getEntryDate());
+        report.setBatchStatus(batch.getStatus());
+        report.setAssetCode(line.getAssetCode());
+        report.setAccountCode(line.getAccountCode());
+        report.setAccountName(line.getAccountName());
+        report.setDebit(defaultDecimal(line.getDebit()));
+        report.setCredit(defaultDecimal(line.getCredit()));
+        report.setDepartment(line.getDepartment());
+        report.setCategory(line.getCategory());
+        report.setNarration(line.getNarration());
+        return report;
     }
 
     @Transactional(readOnly = true)
@@ -581,6 +677,18 @@ public class DepreciationService {
 
     private BigDecimal defaultDecimal(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
+    }
+
+    private String escapeCsv(String value) {
+        String safeValue = safe(value);
+        if (safeValue.contains("\"") || safeValue.contains(",") || safeValue.contains("\n")) {
+            return "\"" + safeValue.replace("\"", "\"\"") + "\"";
+        }
+        return safeValue;
     }
 
     private LocalDateTime safeCreatedAt(DepreciationPosting posting) {
