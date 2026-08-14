@@ -92,7 +92,7 @@
         }
 
         .table-scroll-wrapper table {
-            min-width: 640px;
+            min-width: 840px;
         }
 
         @media (max-width: 639px) {
@@ -275,6 +275,12 @@
     <div class="bg-surface-card border border-border-default rounded-xl p-4">
         <div class="filters-bar">
             <div class="filter-group">
+                <label class="text-label-small text-secondary">Period</label>
+                <select id="periodFilter" class="h-[38px] px-3 bg-surface-canvas border border-border-default rounded-lg text-body-default text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                    <option value="">Latest Period</option>
+                </select>
+            </div>
+            <div class="filter-group">
                 <label class="text-label-small text-secondary">Category</label>
                 <select id="categoryFilter" class="h-[38px] px-3 bg-surface-canvas border border-border-default rounded-lg text-body-default text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
                     <option>All Categories</option>
@@ -321,6 +327,40 @@
     </div>
 
     <!-- ── Main Data Grid ── -->
+    <div id="approvalPanel" class="bg-surface-card border border-border-default rounded-xl p-4 sm:p-5">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="font-section-header text-section-header text-on-surface">Period Review</h3>
+                    <span id="periodStatusBadge" class="px-2 py-0.5 rounded-full bg-surface-canvas text-secondary text-badge-label whitespace-nowrap">No period selected</span>
+                </div>
+                <p id="periodReviewSummary" class="text-body-default text-secondary">Run depreciation to create draft records for review.</p>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-surface-canvas rounded-lg px-3 py-2">
+                        <p class="text-label-small text-secondary">Draft</p>
+                        <p id="periodDraftCount" class="font-technical-data text-on-surface">0</p>
+                    </div>
+                    <div class="bg-surface-canvas rounded-lg px-3 py-2">
+                        <p class="text-label-small text-secondary">Approved</p>
+                        <p id="periodApprovedCount" class="font-technical-data text-on-surface">0</p>
+                    </div>
+                    <div class="bg-surface-canvas rounded-lg px-3 py-2">
+                        <p class="text-label-small text-secondary">Total</p>
+                        <p id="periodTotalCount" class="font-technical-data text-on-surface">0</p>
+                    </div>
+                </div>
+                <button id="approvePeriodBtn" disabled
+                        class="h-[38px] px-4 bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span class="material-symbols-outlined text-[18px]">verified</span>
+                    Approve Period
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Data Grid -->
     <div class="main-grid">
 
         <!-- Left: Depreciation Table (8 cols on lg+) -->
@@ -363,6 +403,7 @@
                         <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Name</th>
                         <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Category</th>
                         <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Method</th>
+                        <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Depreciation Charge</th>
                         <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Cost</th>
                         <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Accum. Dep.</th>
                         <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Book Value</th>
@@ -448,6 +489,25 @@
         </div><!-- /sidebar-grid -->
     </div><!-- /main-grid -->
 
+    <div id="approvalConfirmModal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-surface-card rounded-xl shadow-lg max-w-md w-full border border-border-default">
+            <div class="p-5 border-b border-border-default flex items-center gap-3">
+                <span class="material-symbols-outlined text-primary">verified</span>
+                <h3 class="font-section-header text-section-header text-on-surface">Approve Depreciation Period</h3>
+            </div>
+            <div class="p-5 space-y-4">
+                <p id="approvalConfirmText" class="text-body-default text-secondary">Approve the selected draft depreciation records?</p>
+                <div class="flex gap-2 justify-end">
+                    <button id="cancelApprovalBtn" class="h-[38px] px-4 bg-surface-card border border-border-default text-on-surface rounded-lg font-body-medium hover:bg-surface-canvas transition-all">Cancel</button>
+                    <button id="confirmApprovalBtn" class="h-[38px] px-4 bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                        Approve
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', async function () {
             await loadDepreciationDashboard();
@@ -481,12 +541,14 @@
                 }
                 window.__allPostings = allPostings;
 
+                populatePeriodFilter(allPostings, data.lastCalculatedPeriod);
                 populateYearFilter(allPostings);
                 wireFiltersAndExport();
 
                 if (allPostings && allPostings.length > 0) {
                     applyFilters();
                 } else {
+                    updatePeriodReview(null);
                     showTableEmptyState();
                 }
             } catch (error) {
@@ -635,15 +697,14 @@
             if (index === 0) row.classList.add('border-l-4', 'border-primary');
 
             const methodBadge = getMethodBadge(posting.depreciationMethod);
-            const statusBadge = posting.fullyDepreciated
-                ? '<span class="px-2 py-0.5 rounded-full bg-status-warning/10 text-status-warning text-badge-label whitespace-nowrap">Fully Depreciated</span>'
-                : '<span class="px-2 py-0.5 rounded-full bg-status-success/10 text-status-success text-badge-label whitespace-nowrap">Active</span>';
+            const statusBadge = getStatusBadge(posting.status);
 
             row.innerHTML = `
                 <td class="px-4 sm:px-5 py-3 font-technical-data text-technical-data text-primary whitespace-nowrap">${posting.assetCode}</td>
                 <td class="px-4 sm:px-5 py-3 text-body-default text-on-surface">${posting.assetName}</td>
                 <td class="px-4 sm:px-5 py-3 text-body-default text-secondary whitespace-nowrap">${posting.category}</td>
                 <td class="px-4 sm:px-5 py-3">${methodBadge}</td>
+                <td class="px-4 sm:px-5 py-3 font-technical-data text-primary whitespace-nowrap">${formatCurrency(posting.depreciationCharge)}</td>
                 <td class="px-4 sm:px-5 py-3 font-technical-data text-on-surface whitespace-nowrap">₦${formatNumberOnly(posting.assetCost)}</td>
                 <td class="px-4 sm:px-5 py-3 font-technical-data text-error whitespace-nowrap">₦${formatNumberOnly(posting.closingAccumulatedDepreciation)}</td>
                 <td class="px-4 sm:px-5 py-3 font-technical-data font-bold text-on-surface whitespace-nowrap">₦${formatNumberOnly(posting.bookValue)}</td>
@@ -668,6 +729,18 @@
             return `<span class="px-2 py-0.5 rounded-full ${config.color} text-badge-label font-badge-label whitespace-nowrap">${config.label}</span>`;
         }
 
+        function getStatusBadge(status) {
+            const statuses = {
+                'DRAFT': { label: 'Draft', color: 'bg-status-warning/10 text-status-warning' },
+                'APPROVED': { label: 'Approved', color: 'bg-status-success/10 text-status-success' },
+                'POSTED': { label: 'Posted', color: 'bg-status-info/10 text-status-info' },
+                'LOCKED': { label: 'Locked', color: 'bg-primary/10 text-primary' },
+                'REVERSED': { label: 'Reversed', color: 'bg-error/10 text-error' }
+            };
+            const config = statuses[status] || { label: status || 'Unknown', color: 'bg-surface-canvas text-secondary' };
+            return `<span class="px-2 py-0.5 rounded-full ${config.color} text-badge-label font-badge-label whitespace-nowrap">${config.label}</span>`;
+        }
+
         // Map a depreciation method enum to its display label (used for filter matching
         // and export, so we compare on the enum value, not the human label).
         const METHOD_LABELS = {
@@ -677,6 +750,159 @@
         };
         function methodLabel(method) {
             return METHOD_LABELS[method] || method;
+        }
+
+        function populatePeriodFilter(postings, latestPeriod) {
+            const periodSelect = document.getElementById('periodFilter');
+            if (!periodSelect) return;
+
+            const periods = Array.from(new Set((postings || [])
+                .map(p => p.depreciationPeriod)
+                .filter(Boolean)));
+
+            if (periods.length === 0) {
+                periodSelect.innerHTML = '<option value="">No periods available</option>';
+                window.__selectedDepreciationPeriod = '';
+                return;
+            }
+
+            const sortedPeriods = periods.sort((a, b) => comparePeriodsDesc(a, b, postings));
+            const selectedPeriod = latestPeriod && periods.includes(latestPeriod) ? latestPeriod : sortedPeriods[0];
+
+            periodSelect.innerHTML = '';
+            sortedPeriods.forEach(period => {
+                const opt = document.createElement('option');
+                opt.value = period;
+                opt.textContent = period === selectedPeriod ? `Latest Period (${period})` : period;
+                periodSelect.appendChild(opt);
+            });
+            periodSelect.value = selectedPeriod;
+            window.__selectedDepreciationPeriod = selectedPeriod;
+        }
+
+        function comparePeriodsDesc(a, b, postings) {
+            const dateA = latestPeriodEndDate(a, postings);
+            const dateB = latestPeriodEndDate(b, postings);
+            if (dateA && dateB && dateA.getTime() !== dateB.getTime()) {
+                return dateB - dateA;
+            }
+            return String(b).localeCompare(String(a));
+        }
+
+        function latestPeriodEndDate(period, postings) {
+            const dates = (postings || [])
+                .filter(p => p.depreciationPeriod === period && p.periodEndDate)
+                .map(p => new Date(p.periodEndDate));
+            if (dates.length === 0) return null;
+            return new Date(Math.max(...dates.map(d => d.getTime())));
+        }
+
+        function updatePeriodReview(period) {
+            const approveBtn = document.getElementById('approvePeriodBtn');
+            const statusBadge = document.getElementById('periodStatusBadge');
+            const summary = document.getElementById('periodReviewSummary');
+            const draftCountEl = document.getElementById('periodDraftCount');
+            const approvedCountEl = document.getElementById('periodApprovedCount');
+            const totalCountEl = document.getElementById('periodTotalCount');
+            if (!approveBtn || !statusBadge || !summary) return;
+
+            const postings = (window.__allPostings || []).filter(p => p.depreciationPeriod === period);
+            const statusCounts = postings.reduce((acc, p) => {
+                const status = p.status || 'UNKNOWN';
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+            }, {});
+            const draftCount = statusCounts.DRAFT || 0;
+            const approvedCount = statusCounts.APPROVED || 0;
+            const totalCount = postings.length;
+            const totalCharge = postings.reduce((sum, p) => sum + parseFloat(p.depreciationCharge || 0), 0);
+            const dominantStatus = resolvePeriodStatus(statusCounts, totalCount);
+
+            draftCountEl.textContent = draftCount;
+            approvedCountEl.textContent = approvedCount;
+            totalCountEl.textContent = totalCount;
+
+            if (!period || totalCount === 0) {
+                statusBadge.className = 'px-2 py-0.5 rounded-full bg-surface-canvas text-secondary text-badge-label whitespace-nowrap';
+                statusBadge.textContent = 'No period selected';
+                summary.textContent = 'Run depreciation to create draft records for review.';
+                approveBtn.disabled = true;
+                return;
+            }
+
+            const badge = periodStatusBadgeConfig(dominantStatus);
+            statusBadge.className = `px-2 py-0.5 rounded-full ${badge.color} text-badge-label whitespace-nowrap`;
+            statusBadge.textContent = `${period}: ${badge.label}`;
+            summary.textContent = `Review ${totalCount} posting${totalCount !== 1 ? 's' : ''} for ${period}. Total depreciation charge: ${formatCurrency(totalCharge)}.`;
+            approveBtn.disabled = draftCount === 0;
+        }
+
+        function resolvePeriodStatus(statusCounts, totalCount) {
+            if (totalCount === 0) return 'NONE';
+            if ((statusCounts.DRAFT || 0) > 0) return 'DRAFT';
+            if ((statusCounts.APPROVED || 0) === totalCount) return 'APPROVED';
+            if ((statusCounts.POSTED || 0) === totalCount) return 'POSTED';
+            if ((statusCounts.LOCKED || 0) === totalCount) return 'LOCKED';
+            if ((statusCounts.REVERSED || 0) === totalCount) return 'REVERSED';
+            return 'MIXED';
+        }
+
+        function periodStatusBadgeConfig(status) {
+            const statuses = {
+                'DRAFT': { label: 'Draft records ready for approval', color: 'bg-status-warning/10 text-status-warning' },
+                'APPROVED': { label: 'Approved', color: 'bg-status-success/10 text-status-success' },
+                'POSTED': { label: 'Posted', color: 'bg-status-info/10 text-status-info' },
+                'LOCKED': { label: 'Locked', color: 'bg-primary/10 text-primary' },
+                'REVERSED': { label: 'Reversed', color: 'bg-error/10 text-error' },
+                'MIXED': { label: 'Mixed statuses', color: 'bg-status-warning/10 text-status-warning' }
+            };
+            return statuses[status] || { label: 'No period selected', color: 'bg-surface-canvas text-secondary' };
+        }
+
+        function openApprovalModal() {
+            const period = document.getElementById('periodFilter')?.value || window.__selectedDepreciationPeriod;
+            const draftCount = (window.__allPostings || [])
+                .filter(p => p.depreciationPeriod === period && p.status === 'DRAFT')
+                .length;
+            if (!period || draftCount === 0) return;
+
+            window.__approvalRequestPeriod = period;
+            document.getElementById('approvalConfirmText').textContent =
+                `Approve ${draftCount} draft depreciation posting${draftCount !== 1 ? 's' : ''} for period ${period}?`;
+            document.getElementById('approvalConfirmModal').classList.remove('hidden');
+        }
+
+        function closeApprovalModal() {
+            window.__approvalRequestPeriod = null;
+            document.getElementById('approvalConfirmModal').classList.add('hidden');
+        }
+
+        async function approveSelectedPeriod() {
+            const period = window.__approvalRequestPeriod;
+            if (!period) return;
+
+            const confirmBtn = document.getElementById('confirmApprovalBtn');
+            confirmBtn.disabled = true;
+            confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            try {
+                const response = await fetch(`/api/depreciation/period/${encodeURIComponent(period)}/approve`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || result.error || 'Approval failed');
+                }
+
+                closeApprovalModal();
+                showAlert(`Approved ${result.approvedCount} depreciation posting${result.approvedCount !== 1 ? 's' : ''} for ${period}.`, 'success');
+                await loadDepreciationDashboard();
+            } catch (error) {
+                showAlert('Error approving depreciation period: ' + error.message, 'error');
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
         }
 
         // Populate the Year Range dropdown from the dataset + the real current year.
@@ -706,26 +932,46 @@
         }
 
         function wireFiltersAndExport() {
-            ['categoryFilter', 'departmentFilter', 'methodFilter', 'yearFilter'].forEach(id => {
+            ['periodFilter', 'categoryFilter', 'departmentFilter', 'methodFilter', 'yearFilter'].forEach(id => {
                 const el = document.getElementById(id);
-                if (el) el.addEventListener('change', applyFilters);
+                if (el) el.onchange = applyFilters;
             });
 
             const exportHandlers = ['exportBtn', 'exportBtn2'].map(id => document.getElementById(id));
             exportHandlers.forEach(btn => {
-                if (btn) btn.addEventListener('click', () => exportCsv(getFilteredPostings()));
+                if (btn) btn.onclick = () => exportCsv(getFilteredPostings());
             });
 
             const moreBtn = document.getElementById('moreFiltersBtn');
             if (moreBtn) {
-                moreBtn.addEventListener('click', () => {
+                moreBtn.onclick = () => {
                     showAlert('All available filters are shown above (Category, Department, Method, Year Range).', 'info');
-                });
+                };
             }
+
+            const approveBtn = document.getElementById('approvePeriodBtn');
+            if (approveBtn) approveBtn.onclick = openApprovalModal;
+
+            const cancelApprovalBtn = document.getElementById('cancelApprovalBtn');
+            if (cancelApprovalBtn) cancelApprovalBtn.onclick = closeApprovalModal;
+
+            const approvalModal = document.getElementById('approvalConfirmModal');
+            if (approvalModal) {
+                approvalModal.onclick = (event) => {
+                    if (event.target === approvalModal) closeApprovalModal();
+                };
+            }
+
+            const confirmApprovalBtn = document.getElementById('confirmApprovalBtn');
+            if (confirmApprovalBtn) confirmApprovalBtn.onclick = approveSelectedPeriod;
         }
 
         // Apply the four filters and re-render the table + sidebar from the result.
         function applyFilters() {
+            const selectedPeriod = document.getElementById('periodFilter')?.value || '';
+            window.__selectedDepreciationPeriod = selectedPeriod;
+            updatePeriodReview(selectedPeriod);
+
             const filtered = getFilteredPostings();
             if (filtered.length === 0) {
                 showTableEmptyState();
@@ -744,8 +990,10 @@
             const dept = document.getElementById('departmentFilter')?.value || 'All Departments';
             const method = document.getElementById('methodFilter')?.value || 'All Methods';
             const year = document.getElementById('yearFilter')?.value || '';
+            const period = document.getElementById('periodFilter')?.value || '';
 
             return all.filter(p => {
+                if (period && (p.depreciationPeriod || '') !== period) return false;
                 if (cat !== 'All Categories' && (p.category || '') !== cat) return false;
                 if (dept !== 'All Departments' && (p.department || '') !== dept) return false;
                 if (method !== 'All Methods' && methodLabel(p.depreciationMethod) !== method) return false;
@@ -790,7 +1038,7 @@
                     p.depreciationCharge,
                     p.closingAccumulatedDepreciation,
                     p.bookValue,
-                    p.fullyDepreciated ? 'Fully Depreciated' : 'Active'
+                    p.status || ''
                 ].map(escapeCsv);
                 lines.push(row.join(','));
             });

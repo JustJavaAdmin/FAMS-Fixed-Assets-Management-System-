@@ -114,6 +114,21 @@ class DepreciationServiceTest {
     }
 
     @Test
+    void approveDepreciationPeriodUpdatesOnlyDraftPostings() {
+        DepreciationPosting draft = posting(1L, "2026-01", LocalDate.of(2026, 1, 31), new BigDecimal("8.33"), DepreciationPostingStatus.DRAFT);
+        DepreciationPosting alreadyApproved = posting(2L, "2026-01", LocalDate.of(2026, 1, 31), new BigDecimal("10.00"), DepreciationPostingStatus.APPROVED);
+
+        when(postingRepository.findByDepreciationPeriodOrderByAssetCode("2026-01")).thenReturn(List.of(draft, alreadyApproved));
+
+        int approvedCount = service.approveDepreciationPeriod("2026-01");
+
+        assertEquals(1, approvedCount);
+        assertEquals(DepreciationPostingStatus.APPROVED, draft.getStatus());
+        assertEquals(DepreciationPostingStatus.APPROVED, alreadyApproved.getStatus());
+        verify(postingRepository).saveAll(List.of(draft, alreadyApproved));
+    }
+
+    @Test
     void postingApprovedPeriodCreatesBalancedAccountingJournalLines() {
         DepreciationPosting approvedPosting = posting(1L, "2026-01", LocalDate.of(2026, 1, 31), new BigDecimal("8.33"), DepreciationPostingStatus.APPROVED);
 
