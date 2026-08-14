@@ -101,9 +101,16 @@ public class DepreciationValidation {
             return ValidationResult.error("Depreciation period cannot be empty");
         }
 
-        // Expected formats: YYYY-MM, YYYY-Q1, YYYY-Q2, YYYY-Q3, YYYY-Q4
-        if (!period.matches("^\\d{4}-(\\d{2}|Q[1-4])$")) {
-            return ValidationResult.error("Invalid period format. Use YYYY-MM or YYYY-Q1/Q2/Q3/Q4");
+        // Expected formats: YYYY-MM, YYYY-Q1, YYYY-Q2, YYYY-Q3, YYYY-Q4, YYYY-A
+        if (!period.matches("^\\d{4}-(\\d{2}|Q[1-4]|A)$")) {
+            return ValidationResult.error("Invalid period format. Use YYYY-MM, YYYY-Q1/Q2/Q3/Q4, or YYYY-A");
+        }
+
+        if (period.matches("^\\d{4}-\\d{2}$")) {
+            int month = Integer.parseInt(period.substring(5, 7));
+            if (month < 1 || month > 12) {
+                return ValidationResult.error("Invalid month in depreciation period");
+            }
         }
 
         return ValidationResult.ok();

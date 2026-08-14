@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Depreciation User Guide | FAMS</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #16a34a;
+            --warning: #ca8a04;
+            --danger: #dc2626;
+            --background: #f8fafc;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background-color: var(--background);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 0;
+            margin-bottom: 40px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            color: var(--primary);
+            font-size: 24px;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-new { background-color: #dbeafe; color: #1e40af; }
+
+        nav {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 40px;
+            position: sticky;
+            top: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        nav h2 {
+            margin-top: 0;
+            font-size: 18px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--text);
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: var(--primary);
+        }
+
+        section {
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: var(--primary);
+            margin-top: 0;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h3 {
+            color: var(--text);
+            font-size: 18px;
+            margin-top: 30px;
+        }
+
+        .step {
+            margin-bottom: 30px;
+            padding-left: 20px;
+            border-left: 4px solid var(--border);
+        }
+
+        .step-number {
+            font-weight: bold;
+            color: var(--primary);
+            margin-right: 5px;
+        }
+
+        .info-box {
+            background-color: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .warning-box {
+            background-color: #fffbeb;
+            border-left: 4px solid var(--warning);
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        code {
+            background-color: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        img {
+            max-width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin: 15px 0;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-right: 5px;
+        }
+
+        .status-draft { background-color: #e2e8f0; color: #475569; }
+        .status-approved { background-color: #dcfce7; color: #166534; }
+        .status-posted { background-color: #dbeafe; color: #1e40af; }
+        .status-locked { background-color: #fef9c3; color: #854d0e; }
+
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--secondary);
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            section { padding: 20px; }
+            .header-content { flex-direction: column; text-align: center; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>FAMS Depreciation User Guide</h1>
+            <span class="badge badge-new">New Feature: Posting & Locking</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <nav>
+            <h2>Table of Contents</h2>
+            <ul>
+                <li><a href="#overview">Module Overview</a></li>
+                <li><a href="#configuration">1. Configuration</a></li>
+                <li><a href="#running">2. Running Depreciation</a></li>
+                <li><a href="#approval">3. Approval Process</a></li>
+                <li><a href="#posting">4. Posting to General Ledger</a></li>
+                <li><a href="#locking">5. Locking Periods</a></li>
+                <li><a href="#reversal">6. Reversing Postings</a></li>
+            </ul>
+        </nav>
+
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>The Fixed Asset Management System (FAMS) includes a robust Depreciation Module that automates the calculation, tracking, and accounting of asset depreciation. This guide explains the end-to-end workflow from initial setup to final accounting closure.</p>
+            <div class="info-box">
+                <strong>New in this version:</strong> We have introduced a formal workflow for depreciation runs, including multi-stage statuses: Draft &rarr; Approved &rarr; Posted &rarr; Locked.
+            </div>
+        </section>
+
+        <section id="configuration">
+            <h2>1. Configuring Depreciation Parameters</h2>
+            <p>Before any depreciation can be calculated, you must define the parameters for your assets.</p>
+            
+            <div class="step">
+                <span class="step-number">Step 1.1:</span> Navigate to <strong>Depreciation &rarr; Configure</strong>.
+            </div>
+            
+            <div class="step">
+                <span class="step-number">Step 1.2:</span> Select either <strong>Category-Wide</strong> (to apply settings to all assets in a category) or <strong>Asset-Specific</strong> (to override for a single asset).
+            </div>
+
+            <div class="step">
+                <span class="step-number">Step 1.3:</span> Fill in the following details:
+                <ul>
+                    <li><strong>Depreciation Method:</strong> Choose Straight-Line, Reducing Balance, or Double Declining Balance.</li>
+                    <li><strong>Useful Life:</strong> Expected duration (in years) the asset will be used.</li>
+                    <li><strong>Residual Value:</strong> Estimated value of the asset at the end of its useful life.</li>
+                    <li><strong>Effective Date:</strong> When these parameters start taking effect.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="running">
+            <h2>2. Running Depreciation</h2>
+            <p>At the end of an accounting period (Month, Quarter, or Year), execute the depreciation run.</p>
+
+            <div class="step">
+                <span class="step-number">Step 2.1:</span> Go to <strong>Depreciation &rarr; Run Depreciation</strong>.
+            </div>
+
+            <div class="step">
+                <span class="step-number">Step 2.2:</span> Select the <strong>Period Type</strong> (Monthly, Quarterly, or Annual) and choose the specific <strong>Year</strong> and <strong>Period</strong>.
+            </div>
+
+            <div class="step">
+                <span class="step-number">Step 2.3:</span> Verify the <strong>Period End Date</strong>. The system automatically calculates this, but you should confirm it matches your accounting calendar.
+            </div>
+
+            <div class="step">
+                <span class="step-number">Step 2.4:</span> Check the confirmation box and click <strong>"Run Depreciation"</strong>.
+            </div>
+
+            <div class="info-box">
+                All generated records are initially created with a <span class="status-badge status-draft">DRAFT</span> status. This allows you to review the calculations before they affect your financial records.
+            </div>
+        </section>
+
+        <section id="approval">
+            <h2>3. Approval Process</h2>
+            <p>Once the depreciation is run, a supervisor or manager should review the results.</p>
+
+            <div class="step">
+                <span class="step-number">Step 3.1:</span> View the results on the <strong>Depreciation Dashboard</strong>.
+            </div>
+
+            <div class="step">
+                <span class="step-number">Step 3.2:</span> Review the "Depreciation Charge" for accuracy against expected values.
+            </div>
+
+            <div class="step">
+                <span class="step-number">Step 3.3:</span> Click the <strong>"Approve Period"</strong> button. This updates all draft records to <span class="status-badge status-approved">APPROVED</span> status.
+            </div>
+        </section>
+
+        <section id="posting">
+            <h2>4. Posting to General Ledger</h2>
+            <p>Approved depreciation must be posted to the accounting system to generate journal entries.</p>
+
+            <div class="step">
+                <span class="step-number">Step 4.1:</span> After approval, locate the <strong>"Post to Ledger"</strong> button in the period summary view.
+            </div>
+
+            <div class="step">
+                <span class="step-number">Step 4.2:</span> Confirm the action. The system will:
+                <ul>
+                    <li>Create an <strong>Accounting Journal Batch</strong> (e.g., <code>DEP-2026-08-...</code>).</li>
+                    <li>Debit the <strong>Depreciation Expense</strong> account.</li>
+                    <li>Credit the <strong>Accumulated Depreciation</strong> account.</li>
+                    <li>Update the status of records to <span class="status-badge status-posted">POSTED</span>.</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <strong>Important:</strong> Only approved records can be posted. Posting is a critical financial action that affects your Balance Sheet and Income Statement.
+            </div>
+        </section>
+
+        <section id="locking">
+            <h2>5. Locking Periods</h2>
+            <p>To prevent any further changes or accidental reversals after a financial audit or final closure, you should lock the period.</p>
+
+            <div class="step">
+                <span class="step-number">Step 5.1:</span> Once all postings are verified, click <strong>"Lock Period"</strong>.
+            </div>
+
+            <div class="step">
+                <span class="step-number">Step 5.2:</span> The status will change to <span class="status-badge status-locked">LOCKED</span>.
+            </div>
+
+            <div class="info-box">
+                Locked records are preserved for audit purposes and signify the finality of that period's depreciation accounting.
+            </div>
+        </section>
+
+        <section id="reversal">
+            <h2>6. Reversing Postings</h2>
+            <p>If an error is discovered after posting but before locking, you may perform a reversal.</p>
+
+            <div class="step">
+                <span class="step-number">Step 6.1:</span> Navigate to the period details and select <strong>"Reverse Period"</strong>.
+            </div>
+
+            <div class="step">
+                <span class="step-number">Step 6.2:</span> The system will mark the accounting journal as reversed and update the depreciation records.
+            </div>
+
+            <div class="warning-box">
+                Reversing a period should only be done to correct significant errors. Always consult with your finance department before performing a reversal.
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2026 FAMS - Fixed Assets Management System. All rights reserved.</p>
+            <p>Version 2.0 | Last Updated: August 13, 2026</p>
+        </footer>
+    </div>
+</body>
+</html>

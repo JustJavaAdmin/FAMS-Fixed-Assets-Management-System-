@@ -9,39 +9,49 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.YearMonth;
-import java.util.*;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class DepreciationService {
 
+    private static final String SOURCE_MODULE = "DEPRECIATION";
+    private static final String DEPRECIATION_EXPENSE_ACCOUNT = "6100";
+    private static final String DEPRECIATION_EXPENSE_NAME = "Depreciation Expense";
+    private static final String ACCUMULATED_DEPRECIATION_ACCOUNT = "1705";
+    private static final String ACCUMULATED_DEPRECIATION_NAME = "Accumulated Depreciation";
+
     private final DepreciationParametersRepository parametersRepository;
     private final DepreciationPostingRepository postingRepository;
     private final AssetRepository assetRepository;
     private final DepreciationCalculationService calculationService;
+    private final AccountingJournalBatchRepository journalBatchRepository;
+    private final AccountingJournalLineRepository journalLineRepository;
 
     public DepreciationService(DepreciationParametersRepository parametersRepository,
-                              DepreciationPostingRepository postingRepository,
-                              AssetRepository assetRepository,
-                              DepreciationCalculationService calculationService) {
+                               DepreciationPostingRepository postingRepository,
+                               AssetRepository assetRepository,
+                               DepreciationCalculationService calculationService,
+                               AccountingJournalBatchRepository journalBatchRepository,
+                               AccountingJournalLineRepository journalLineRepository) {
         this.parametersRepository = parametersRepository;
         this.postingRepository = postingRepository;
         this.assetRepository = assetRepository;
         this.calculationService = calculationService;
+        this.journalBatchRepository = journalBatchRepository;
+        this.journalLineRepository = journalLineRepository;
     }
 
-    /**
-     * Get or create depreciation parameters for an asset
-     */
     @Transactional(readOnly = true)
     public Optional<DepreciationParameters> getParametersForAsset(Long assetId, LocalDate asOfDate) {
-        return parametersRepository.findByAssetIdAndEffectiveFromDateLessThanEqualAndIsActiveTrue(assetId, asOfDate);
+        return parametersRepository.findEffectiveAssetParameters(assetId, asOfDate).stream().findFirst();
     }
 
-    /**
-     * Save depreciation parameters
-     */
     @Transactional
     public DepreciationParameters saveParameters(DepreciationParameters parameters) {
         if (parameters.getEffectiveFromDate() == null) {
@@ -50,36 +60,29 @@ public class DepreciationService {
         return parametersRepository.save(parameters);
     }
 
-    /**
-     * End current parameters and create new ones (for future-dated changes)
-     */
     @Transactional
     public void updateParametersWithEffectiveDate(Long parametersId, DepreciationParameters newParameters) {
-        Optional<DepreciationParameters> existing = parametersRepository.findById(parametersId);
-        existing.ifPresent(current -> {
-            // End the current parameters
-            current.setEffectiveToDate(newParameters.getEffectiveFromDate().minusDays(1));
-            current.setIsActive(newParameters.getEffectiveFromDate().isAfter(AppClock.today()));
-            parametersRepository.save(current);
-        });
+        DepreciationParameters current = parametersRepository.findById(parametersId)
+                .orElseThrow(() -> new IllegalArgumentException("Depreciation parameters not found: " + parametersId));
+        if (newParameters.getEffectiveFromDate() == null) {
+            throw new IllegalArgumentException("Effective from date is required");
+        }
+        current.setEffectiveToDate(newParameters.getEffectiveFromDate().minusDays(1));
+        current.setIsActive(false);
+        parametersRepository.save(current);
 
-        // Save the new parameters
+        newParameters.setId(null);
+        newParameters.setAssetId(current.getAssetId());
+        newParameters.setCategory(current.getCategory());
+        newParameters.setIsActive(true);
         parametersRepository.save(newParameters);
     }
 
-    /**
-     * Get category-wide parameters
-     */
     @Transactional(readOnly = true)
     public List<DepreciationParameters> getCategoryParameters(String category) {
-        return parametersRepository.findByCategoryAndIsActiveTrueAndAssetIdIsNull(category);
+        return parametersRepository.findEffectiveCategoryParameters(category, AppClock.today());
     }
 
-    /**
-     * Run depreciation for a specific period (e.g., "2024-12" for December 2024,
-     * "2024-06" for June, "2024-Q1" for Q1). The period code also encodes whether the
-     * charge should be prorated (monthly = 1/12, quarterly = 1/4, annual = full).
-     */
     @Transactional
     public DepreciationRunResult runDepreciation(String depreciationPeriod, LocalDate periodEndDate) {
         DepreciationRunResult result = new DepreciationRunResult();
@@ -87,32 +90,28 @@ public class DepreciationService {
         result.setRunDate(AppClock.today());
 
         try {
-            // Get all assets
-            List<Asset> assets = assetRepository.findAll();
-            Integer fiscalYear = periodEndDate.getYear();
-            String periodType = resolvePeriodType(depreciationPeriod);
+            DepreciationPeriod period = DepreciationPeriod.from(depreciationPeriod, periodEndDate);
+            List<DepreciationPosting> savedPostings = new ArrayList<>();
 
-            for (Asset asset : assets) {
+            for (Asset asset : assetRepository.findAll()) {
                 try {
-                    DepreciationPosting posting = calculateDepreciationForAsset(asset, depreciationPeriod, periodEndDate, fiscalYear, periodType);
-                    if (posting != null) {
-                        // Replace any existing posting for this asset + period (idempotent re-run).
-                        deleteExistingPosting(asset.getId(), depreciationPeriod);
-                        postingRepository.save(posting);
-                        result.addSuccessfulAsset(asset.getAssetCode());
-                    } else {
-                        result.addFailedAsset(asset.getAssetCode(), "No depreciation parameters configured for this asset");
+                    ensurePeriodCanBeRecalculated(asset.getId(), period.code());
+                    deleteExistingDraftPosting(asset.getId(), period.code());
+
+                    DepreciationPosting posting = calculateDepreciationForAsset(asset, period);
+                    if (posting == null) {
+                        result.addFailedAsset(asset.getAssetCode(), "Asset is not eligible or has no depreciation parameters configured for this period");
+                        continue;
                     }
+
+                    savedPostings.add(postingRepository.save(posting));
+                    result.addSuccessfulAsset(asset.getAssetCode());
                 } catch (Exception e) {
                     result.addFailedAsset(asset.getAssetCode(), e.getMessage());
                 }
             }
 
-            if (result.getFailureCount() > 0) {
-                result.setStatus("COMPLETED_WITH_ERRORS");
-            } else {
-                result.setStatus("COMPLETED");
-            }
+            result.setStatus(result.getFailureCount() > 0 ? "COMPLETED_WITH_ERRORS" : "COMPLETED");
         } catch (Exception e) {
             result.setStatus("FAILED");
             result.setErrorMessage(e.getMessage());
@@ -121,69 +120,52 @@ public class DepreciationService {
         return result;
     }
 
-    /**
-     * Derive the period type (and therefore the proration fraction) from a depreciation
-     * period code. Codes produced by the UI:
-     *   "YYYY-MM"  → monthly  (1/12)
-     *   "YYYY-Q1".."YYYY-Q4" → quarterly (1/4)
-     *   "YYYY-12"  → annual (full)
-     */
     public static String resolvePeriodType(String depreciationPeriod) {
         if (depreciationPeriod == null) {
             return "annual";
         }
-        if (depreciationPeriod.matches(".*-Q[1-4]$")) {
+        if (depreciationPeriod.matches("^\\d{4}-Q[1-4]$")) {
             return "quarterly";
         }
-        if (depreciationPeriod.matches(".*-\\d{2}$")) {
-            String month = depreciationPeriod.substring(depreciationPeriod.length() - 2);
-            return "12".equals(month) ? "annual" : "monthly";
+        if (depreciationPeriod.matches("^\\d{4}-A$")) {
+            return "annual";
+        }
+        if (depreciationPeriod.matches("^\\d{4}-\\d{2}$")) {
+            return "monthly";
         }
         return "annual";
     }
 
-    /**
-     * Calculate depreciation for a single asset
-     */
     @Transactional(readOnly = true)
-    public DepreciationPosting calculateDepreciationForAsset(Asset asset, String depreciationPeriod, LocalDate periodEndDate, Integer fiscalYear, String periodType) {
-        // Resolve depreciation parameters: asset-specific first, then category-wide fallback
-        Optional<DepreciationParameters> parameters = resolveParameters(asset);
+    public DepreciationPosting calculateDepreciationForAsset(Asset asset,
+                                                             String depreciationPeriod,
+                                                             LocalDate periodEndDate,
+                                                             Integer fiscalYear,
+                                                             String periodType) {
+        return calculateDepreciationForAsset(asset, DepreciationPeriod.from(depreciationPeriod, periodEndDate));
+    }
 
+    @Transactional(readOnly = true)
+    public DepreciationPosting calculateDepreciationForAsset(Asset asset, DepreciationPeriod period) {
+        if (!isAssetDepreciable(asset, period)) {
+            return null;
+        }
+
+        Optional<DepreciationParameters> parameters = resolveParameters(asset, period.endDate());
         if (parameters.isEmpty()) {
-            // No depreciation parameters configured
             return null;
         }
 
         DepreciationParameters params = parameters.get();
-
-        // Check if asset is disposed or not active
-        if (!isAssetDepreciable(asset)) {
-            return null;
-        }
-
         BigDecimal assetCost = asset.getPurchaseCost();
-        BigDecimal residualValue = params.getResidualValue();
+        BigDecimal residualValue = defaultDecimal(params.getResidualValue());
+        BigDecimal openingAccumulated = postingRepository
+                .findFirstByAssetIdAndPeriodEndDateBeforeAndStatusNotOrderByPeriodEndDateDesc(
+                        asset.getId(), period.startDate(), DepreciationPostingStatus.REVERSED)
+                .map(DepreciationPosting::getClosingAccumulatedDepreciation)
+                .map(this::defaultDecimal)
+                .orElse(BigDecimal.ZERO);
 
-        DepreciationPosting posting = new DepreciationPosting();
-        posting.setAssetId(asset.getId());
-        posting.setAssetCode(asset.getAssetCode());
-        posting.setAssetName(asset.getName());
-        posting.setCategory(asset.getCategory());
-        posting.setDepartment(asset.getDepartment());
-        posting.setDepreciationMethod(params.getMethod());
-        posting.setDepreciationPeriod(depreciationPeriod);
-        posting.setFiscalYear(fiscalYear);
-        posting.setAssetCost(assetCost);
-        posting.setUsefulLifeYears(params.getUsefulLifeYears());
-        posting.setResidualValue(residualValue);
-
-        // Get previous posting to get opening accumulated depreciation
-        DepreciationPosting previousPosting = postingRepository.findFirstByAssetIdOrderByDepreciationPeriodDesc(asset.getId());
-        BigDecimal openingAccumulated = previousPosting != null ? previousPosting.getClosingAccumulatedDepreciation() : BigDecimal.ZERO;
-        posting.setOpeningAccumulatedDepreciation(openingAccumulated);
-
-        // Calculate the annual depreciation charge for this asset
         BigDecimal annualCharge = calculationService.calculateAnnualDepreciation(
                 assetCost,
                 residualValue,
@@ -193,81 +175,82 @@ public class DepreciationService {
                 openingAccumulated
         );
 
-        // Prorate to the period being closed (monthly → 1/12, quarterly → 1/4, annual → full)
-        BigDecimal depreciationCharge = calculationService.prorateCharge(annualCharge, periodType);
-        posting.setDepreciationCharge(depreciationCharge);
-
-        // Calculate closing accumulated depreciation (clamped so it never exceeds cost - residual)
-        BigDecimal depreciableLimit = assetCost.subtract(residualValue == null ? BigDecimal.ZERO : residualValue);
+        BigDecimal depreciationCharge = calculationService.prorateCharge(annualCharge, period.type().name().toLowerCase());
+        BigDecimal depreciableLimit = assetCost.subtract(residualValue);
         BigDecimal closingAccumulated = openingAccumulated.add(depreciationCharge);
         if (closingAccumulated.compareTo(depreciableLimit) > 0) {
             closingAccumulated = depreciableLimit;
+            depreciationCharge = closingAccumulated.subtract(openingAccumulated).max(BigDecimal.ZERO);
         }
+
+        DepreciationPosting posting = new DepreciationPosting();
+        posting.setAssetId(asset.getId());
+        posting.setAssetCode(asset.getAssetCode());
+        posting.setAssetName(asset.getName());
+        posting.setCategory(asset.getCategory());
+        posting.setDepartment(asset.getDepartment());
+        posting.setDepreciationMethod(params.getMethod());
+        posting.setDepreciationPeriod(period.code());
+        posting.setPeriodType(period.type());
+        posting.setPeriodNumber(period.periodNumber());
+        posting.setPeriodStartDate(period.startDate());
+        posting.setPeriodEndDate(period.endDate());
+        posting.setFiscalYear(period.fiscalYear());
+        posting.setAssetCost(assetCost);
+        posting.setUsefulLifeYears(params.getUsefulLifeYears());
+        posting.setResidualValue(residualValue);
+        posting.setOpeningAccumulatedDepreciation(openingAccumulated);
+        posting.setDepreciationCharge(depreciationCharge);
         posting.setClosingAccumulatedDepreciation(closingAccumulated);
-
-        // Calculate book value
-        BigDecimal bookValue = calculationService.calculateBookValue(assetCost, closingAccumulated);
-        posting.setBookValue(bookValue);
-
-        // Check if fully depreciated
-        boolean fullyDep = calculationService.isFullyDepreciated(assetCost, residualValue, closingAccumulated);
-        posting.setFullyDepreciated(fullyDep);
-
+        posting.setBookValue(calculationService.calculateBookValue(assetCost, closingAccumulated));
+        posting.setFullyDepreciated(calculationService.isFullyDepreciated(assetCost, residualValue, closingAccumulated));
+        posting.setStatus(DepreciationPostingStatus.DRAFT);
         return posting;
     }
 
-    /**
-     * Resolve the depreciation parameters that apply to an asset: prefer an asset-specific
-     * (still-active) configuration; if none exists, fall back to the active category-wide
-     * configuration for the asset's category.
-     */
     @Transactional(readOnly = true)
     public Optional<DepreciationParameters> resolveParameters(Asset asset) {
-        Optional<DepreciationParameters> assetParams = getParametersForAsset(asset.getId(), AppClock.today());
+        return resolveParameters(asset, AppClock.today());
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<DepreciationParameters> resolveParameters(Asset asset, LocalDate asOfDate) {
+        Optional<DepreciationParameters> assetParams = getParametersForAsset(asset.getId(), asOfDate);
         if (assetParams.isPresent()) {
             return assetParams;
         }
-        List<DepreciationParameters> categoryParams = getCategoryParameters(asset.getCategory());
-        return categoryParams.stream().findFirst();
+        return parametersRepository.findEffectiveCategoryParameters(asset.getCategory(), asOfDate).stream().findFirst();
     }
 
-    /**
-     * Delete any existing posting for the given asset + period so a re-run replaces rather
-     * than duplicates it (keeps accumulated depreciation from being double-counted).
-     */
     @Transactional
     public void deleteExistingPosting(Long assetId, String depreciationPeriod) {
+        deleteExistingDraftPosting(assetId, depreciationPeriod);
+    }
+
+    @Transactional
+    public void deleteExistingDraftPosting(Long assetId, String depreciationPeriod) {
         List<DepreciationPosting> existing = postingRepository.findByAssetIdAndDepreciationPeriod(assetId, depreciationPeriod);
-        if (!existing.isEmpty()) {
-            postingRepository.deleteAll(existing);
+        List<DepreciationPosting> drafts = existing.stream()
+                .filter(p -> p.getStatus() == null || p.getStatus() == DepreciationPostingStatus.DRAFT)
+                .toList();
+        if (!drafts.isEmpty()) {
+            postingRepository.deleteAll(drafts);
         }
     }
 
-    /**
-     * Get depreciation history for an asset
-     */
     @Transactional(readOnly = true)
     public List<DepreciationPosting> getDepreciationHistory(Long assetId) {
         return postingRepository.findByAssetIdOrderByDepreciationPeriodDesc(assetId);
     }
 
-    /**
-     * Get depreciation report for a period
-     */
     @Transactional(readOnly = true)
     public DepreciationReport getDepreciationReport(String depreciationPeriod) {
-        List<DepreciationPosting> postings = postingRepository.findByDepreciationPeriodOrderByAssetCode(depreciationPeriod);
-        return buildReport(postings, depreciationPeriod);
+        return buildReport(postingRepository.findByDepreciationPeriodOrderByAssetCode(depreciationPeriod), depreciationPeriod);
     }
 
-    /**
-     * Get depreciation by category for a period
-     */
     @Transactional(readOnly = true)
     public List<DepreciationCategoryReport> getCategoryReport(String depreciationPeriod) {
-        List<DepreciationPosting> postings = postingRepository.findByDepreciationPeriodOrderByAssetCode(depreciationPeriod);
-
-        return postings.stream()
+        return postingRepository.findByDepreciationPeriodOrderByAssetCode(depreciationPeriod).stream()
                 .collect(Collectors.groupingBy(DepreciationPosting::getCategory))
                 .entrySet()
                 .stream()
@@ -276,14 +259,9 @@ public class DepreciationService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get depreciation by department for a period
-     */
     @Transactional(readOnly = true)
     public List<DepreciationDepartmentReport> getDepartmentReport(String depreciationPeriod) {
-        List<DepreciationPosting> postings = postingRepository.findByDepreciationPeriodOrderByAssetCode(depreciationPeriod);
-
-        return postings.stream()
+        return postingRepository.findByDepreciationPeriodOrderByAssetCode(depreciationPeriod).stream()
                 .collect(Collectors.groupingBy(DepreciationPosting::getDepartment))
                 .entrySet()
                 .stream()
@@ -292,110 +270,6 @@ public class DepreciationService {
                 .collect(Collectors.toList());
     }
 
-    private DepreciationReport buildReport(List<DepreciationPosting> postings, String period) {
-        DepreciationReport report = new DepreciationReport();
-        report.setPeriod(period);
-        report.setPostings(postings);
-
-        BigDecimal totalOriginalCost = postings.stream()
-                .map(DepreciationPosting::getAssetCost)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalAccumulated = postings.stream()
-                .map(DepreciationPosting::getClosingAccumulatedDepreciation)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalCharge = postings.stream()
-                .map(DepreciationPosting::getDepreciationCharge)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalBookValue = postings.stream()
-                .map(DepreciationPosting::getBookValue)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        report.setTotalOriginalCost(totalOriginalCost);
-        report.setTotalAccumulatedDepreciation(totalAccumulated);
-        report.setTotalDepreciationCharge(totalCharge);
-        report.setTotalBookValue(totalBookValue);
-        report.setAssetCount(postings.size());
-        report.setFullyDepreciatedCount((int) postings.stream().filter(DepreciationPosting::getFullyDepreciated).count());
-
-        return report;
-    }
-
-    private DepreciationCategoryReport buildCategoryReport(String category, List<DepreciationPosting> postings) {
-        DepreciationCategoryReport report = new DepreciationCategoryReport();
-        report.setCategory(category);
-        report.setPostings(postings);
-
-        BigDecimal totalOriginalCost = postings.stream()
-                .map(DepreciationPosting::getAssetCost)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalAccumulated = postings.stream()
-                .map(DepreciationPosting::getClosingAccumulatedDepreciation)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalCharge = postings.stream()
-                .map(DepreciationPosting::getDepreciationCharge)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalBookValue = postings.stream()
-                .map(DepreciationPosting::getBookValue)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        report.setTotalOriginalCost(totalOriginalCost);
-        report.setTotalAccumulatedDepreciation(totalAccumulated);
-        report.setTotalDepreciationCharge(totalCharge);
-        report.setTotalBookValue(totalBookValue);
-        report.setAssetCount(postings.size());
-
-        return report;
-    }
-
-    private DepreciationDepartmentReport buildDepartmentReport(String department, List<DepreciationPosting> postings) {
-        DepreciationDepartmentReport report = new DepreciationDepartmentReport();
-        report.setDepartment(department);
-        report.setPostings(postings);
-
-        BigDecimal totalOriginalCost = postings.stream()
-                .map(DepreciationPosting::getAssetCost)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalAccumulated = postings.stream()
-                .map(DepreciationPosting::getClosingAccumulatedDepreciation)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalCharge = postings.stream()
-                .map(DepreciationPosting::getDepreciationCharge)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalBookValue = postings.stream()
-                .map(DepreciationPosting::getBookValue)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        report.setTotalOriginalCost(totalOriginalCost);
-        report.setTotalAccumulatedDepreciation(totalAccumulated);
-        report.setTotalDepreciationCharge(totalCharge);
-        report.setTotalBookValue(totalBookValue);
-        report.setAssetCount(postings.size());
-
-        return report;
-    }
-
-    private boolean isAssetDepreciable(Asset asset) {
-        if (asset == null || asset.getPurchaseCost() == null) {
-            return false;
-        }
-
-        // Check status - asset should be in use or depreciated
-        String status = asset.getStatus();
-        return status != null && !status.equalsIgnoreCase("Disposed") && !status.equalsIgnoreCase("Scrapped");
-    }
-
-    /**
-     * Get latest summary for all assets
-     */
     @Transactional(readOnly = true)
     public DepreciationSummary getLatestSummary() {
         List<Asset> assets = assetRepository.findAll();
@@ -406,23 +280,24 @@ public class DepreciationService {
         BigDecimal totalBookValue = BigDecimal.ZERO;
         int fullyDepreciatedCount = 0;
 
-        // Configured assets = those with asset-specific OR category-wide active parameters.
-        int configuredAssetCount = countConfiguredAssets(assets);
-
         for (Asset asset : assets) {
             if (!isAssetDepreciable(asset)) {
                 continue;
             }
 
-            totalOriginalCost = totalOriginalCost.add(asset.getPurchaseCost());
+            BigDecimal cost = defaultDecimal(asset.getPurchaseCost());
+            totalOriginalCost = totalOriginalCost.add(cost);
 
-            DepreciationPosting latest = postingRepository.findFirstByAssetIdOrderByDepreciationPeriodDesc(asset.getId());
-            if (latest != null) {
-                totalAccumulated = totalAccumulated.add(latest.getClosingAccumulatedDepreciation());
-                totalBookValue = totalBookValue.add(latest.getBookValue());
-                if (latest.getFullyDepreciated()) {
+            Optional<DepreciationPosting> latest = getLatestPostingForAsset(asset.getId());
+            if (latest.isPresent()) {
+                DepreciationPosting posting = latest.get();
+                totalAccumulated = totalAccumulated.add(defaultDecimal(posting.getClosingAccumulatedDepreciation()));
+                totalBookValue = totalBookValue.add(defaultDecimal(posting.getBookValue()));
+                if (Boolean.TRUE.equals(posting.getFullyDepreciated())) {
                     fullyDepreciatedCount++;
                 }
+            } else {
+                totalBookValue = totalBookValue.add(cost);
             }
         }
 
@@ -430,24 +305,245 @@ public class DepreciationService {
         summary.setTotalAccumulatedDepreciation(totalAccumulated);
         summary.setTotalBookValue(totalBookValue);
         summary.setAssetCount(assets.size());
-        summary.setConfiguredAssetCount(configuredAssetCount);
+        summary.setConfiguredAssetCount(countConfiguredAssets(assets));
         summary.setFullyDepreciatedCount(fullyDepreciatedCount);
-
         return summary;
     }
 
-    /**
-     * Count assets that have depreciation configured, either via an asset-specific
-     * parameter or via an active category-wide parameter for the asset's category.
-     */
+    @Transactional(readOnly = true)
+    public List<DepreciationPosting> getAllPostings() {
+        return postingRepository.findAll().stream()
+                .sorted((a, b) -> safeCreatedAt(b).compareTo(safeCreatedAt(a)))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<DepreciationPosting> getLatestPostingsByPeriod(int limit) {
+        return getAllPostings().stream().limit(limit).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<String> getLatestDepreciationPeriod() {
+        return postingRepository.findAll().stream()
+                .filter(p -> p.getStatus() != DepreciationPostingStatus.REVERSED)
+                .max(Comparator.comparing(DepreciationPosting::getPeriodEndDate, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(DepreciationPosting::getDepreciationPeriod);
+    }
+
+    @Transactional(readOnly = true)
+    public DepreciationDashboardData getDashboardData(int postsToShow) {
+        List<DepreciationPosting> latestPostings = getLatestPostingsByPeriod(postsToShow);
+        LocalDateTime lastCalculatedAt = latestPostings.stream()
+                .map(DepreciationPosting::getCreatedAt)
+                .filter(Objects::nonNull)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+
+        return new DepreciationDashboardData(
+                lastCalculatedAt,
+                getLatestDepreciationPeriod().orElse(null),
+                latestPostings,
+                getLatestSummary()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<DepreciationPosting> getLatestPostingForAsset(Long assetId) {
+        return postingRepository.findFirstByAssetIdAndStatusNotOrderByPeriodEndDateDesc(assetId, DepreciationPostingStatus.REVERSED);
+    }
+
+    @Transactional
+    public int approveDepreciationPeriod(String depreciationPeriod) {
+        List<DepreciationPosting> postings = postingRepository.findByDepreciationPeriodOrderByAssetCode(depreciationPeriod);
+        int approved = 0;
+        for (DepreciationPosting posting : postings) {
+            if (posting.getStatus() == DepreciationPostingStatus.DRAFT) {
+                posting.setStatus(DepreciationPostingStatus.APPROVED);
+                approved++;
+            }
+        }
+        postingRepository.saveAll(postings);
+        return approved;
+    }
+
+    @Transactional
+    public AccountingJournalBatch postDepreciationPeriod(String depreciationPeriod) {
+        List<DepreciationPosting> approvedPostings = postingRepository.findByDepreciationPeriodOrderByAssetCode(depreciationPeriod)
+                .stream()
+                .filter(p -> p.getStatus() == DepreciationPostingStatus.APPROVED)
+                .toList();
+        if (approvedPostings.isEmpty()) {
+            throw new IllegalStateException("No approved depreciation postings found for period " + depreciationPeriod);
+        }
+
+        DepreciationPosting first = approvedPostings.getFirst();
+        DepreciationPeriod period = DepreciationPeriod.from(depreciationPeriod, first.getPeriodEndDate());
+        return createAccountingBatch(period, approvedPostings);
+    }
+
+    @Transactional
+    public int lockDepreciationPeriod(String depreciationPeriod) {
+        List<DepreciationPosting> postings = postingRepository.findByDepreciationPeriodOrderByAssetCode(depreciationPeriod);
+        int locked = 0;
+        for (DepreciationPosting posting : postings) {
+            if (posting.getStatus() == DepreciationPostingStatus.POSTED) {
+                posting.setStatus(DepreciationPostingStatus.LOCKED);
+                locked++;
+            }
+        }
+        postingRepository.saveAll(postings);
+        return locked;
+    }
+
+    @Transactional
+    public int reverseDepreciationPeriod(String depreciationPeriod) {
+        List<DepreciationPosting> postings = postingRepository.findByDepreciationPeriodOrderByAssetCode(depreciationPeriod);
+        int reversed = 0;
+        for (DepreciationPosting posting : postings) {
+            if (posting.getStatus() == DepreciationPostingStatus.POSTED || posting.getStatus() == DepreciationPostingStatus.LOCKED) {
+                posting.setStatus(DepreciationPostingStatus.REVERSED);
+                reversed++;
+            }
+        }
+        postingRepository.saveAll(postings);
+        journalBatchRepository.findBySourceModuleAndSourcePeriod(SOURCE_MODULE, depreciationPeriod)
+                .ifPresent(batch -> batch.setStatus(AccountingJournalStatus.REVERSED));
+        return reversed;
+    }
+
+    private void ensurePeriodCanBeRecalculated(Long assetId, String depreciationPeriod) {
+        boolean locked = postingRepository.findByAssetIdAndDepreciationPeriod(assetId, depreciationPeriod).stream()
+                .anyMatch(p -> p.getStatus() == DepreciationPostingStatus.APPROVED
+                        || p.getStatus() == DepreciationPostingStatus.POSTED
+                        || p.getStatus() == DepreciationPostingStatus.LOCKED);
+        if (locked) {
+            throw new IllegalStateException("Depreciation period is already approved, posted, or locked for this asset");
+        }
+    }
+
+    private AccountingJournalBatch createAccountingBatch(DepreciationPeriod period, List<DepreciationPosting> postings) {
+        List<DepreciationPosting> chargeablePostings = postings.stream()
+                .filter(p -> defaultDecimal(p.getDepreciationCharge()).signum() > 0)
+                .toList();
+        if (chargeablePostings.isEmpty()) {
+            throw new IllegalStateException("No positive depreciation charges found for period " + period.code());
+        }
+
+        journalBatchRepository.findBySourceModuleAndSourcePeriod(SOURCE_MODULE, period.code()).ifPresent(existing -> {
+            journalLineRepository.deleteByBatchId(existing.getId());
+            journalBatchRepository.delete(existing);
+            journalBatchRepository.flush();
+        });
+
+        BigDecimal totalCharge = chargeablePostings.stream()
+                .map(DepreciationPosting::getDepreciationCharge)
+                .map(this::defaultDecimal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        AccountingJournalBatch batch = new AccountingJournalBatch();
+        batch.setBatchNumber("DEP-" + period.code() + "-" + AppClock.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
+        batch.setSourcePeriod(period.code());
+        batch.setEntryDate(period.endDate());
+        batch.setTotalDebit(totalCharge);
+        batch.setTotalCredit(totalCharge);
+        batch.setStatus(AccountingJournalStatus.POSTED);
+        AccountingJournalBatch savedBatch = journalBatchRepository.save(batch);
+
+        List<AccountingJournalLine> lines = new ArrayList<>();
+        for (DepreciationPosting posting : chargeablePostings) {
+            lines.add(journalLine(savedBatch.getId(), posting, DEPRECIATION_EXPENSE_ACCOUNT, DEPRECIATION_EXPENSE_NAME,
+                    posting.getDepreciationCharge(), BigDecimal.ZERO));
+            lines.add(journalLine(savedBatch.getId(), posting, ACCUMULATED_DEPRECIATION_ACCOUNT, ACCUMULATED_DEPRECIATION_NAME,
+                    BigDecimal.ZERO, posting.getDepreciationCharge()));
+            posting.setJournalBatchId(savedBatch.getId());
+            posting.setStatus(DepreciationPostingStatus.POSTED);
+        }
+
+        journalLineRepository.saveAll(lines);
+        postingRepository.saveAll(chargeablePostings);
+        return savedBatch;
+    }
+
+    private AccountingJournalLine journalLine(Long batchId,
+                                              DepreciationPosting posting,
+                                              String accountCode,
+                                              String accountName,
+                                              BigDecimal debit,
+                                              BigDecimal credit) {
+        AccountingJournalLine line = new AccountingJournalLine();
+        line.setBatchId(batchId);
+        line.setAssetCode(posting.getAssetCode());
+        line.setAccountCode(accountCode);
+        line.setAccountName(accountName);
+        line.setDebit(defaultDecimal(debit));
+        line.setCredit(defaultDecimal(credit));
+        line.setDepartment(posting.getDepartment());
+        line.setCategory(posting.getCategory());
+        line.setNarration("Depreciation for " + posting.getAssetCode() + " in " + posting.getDepreciationPeriod());
+        return line;
+    }
+
+    private DepreciationReport buildReport(List<DepreciationPosting> postings, String period) {
+        DepreciationReport report = new DepreciationReport();
+        report.setPeriod(period);
+        report.setPostings(postings);
+        report.setTotalOriginalCost(sum(postings, DepreciationPosting::getAssetCost));
+        report.setTotalAccumulatedDepreciation(sum(postings, DepreciationPosting::getClosingAccumulatedDepreciation));
+        report.setTotalDepreciationCharge(sum(postings, DepreciationPosting::getDepreciationCharge));
+        report.setTotalBookValue(sum(postings, DepreciationPosting::getBookValue));
+        report.setAssetCount(postings.size());
+        report.setFullyDepreciatedCount((int) postings.stream().filter(p -> Boolean.TRUE.equals(p.getFullyDepreciated())).count());
+        return report;
+    }
+
+    private DepreciationCategoryReport buildCategoryReport(String category, List<DepreciationPosting> postings) {
+        DepreciationCategoryReport report = new DepreciationCategoryReport();
+        report.setCategory(category);
+        report.setPostings(postings);
+        report.setTotalOriginalCost(sum(postings, DepreciationPosting::getAssetCost));
+        report.setTotalAccumulatedDepreciation(sum(postings, DepreciationPosting::getClosingAccumulatedDepreciation));
+        report.setTotalDepreciationCharge(sum(postings, DepreciationPosting::getDepreciationCharge));
+        report.setTotalBookValue(sum(postings, DepreciationPosting::getBookValue));
+        report.setAssetCount(postings.size());
+        return report;
+    }
+
+    private DepreciationDepartmentReport buildDepartmentReport(String department, List<DepreciationPosting> postings) {
+        DepreciationDepartmentReport report = new DepreciationDepartmentReport();
+        report.setDepartment(department);
+        report.setPostings(postings);
+        report.setTotalOriginalCost(sum(postings, DepreciationPosting::getAssetCost));
+        report.setTotalAccumulatedDepreciation(sum(postings, DepreciationPosting::getClosingAccumulatedDepreciation));
+        report.setTotalDepreciationCharge(sum(postings, DepreciationPosting::getDepreciationCharge));
+        report.setTotalBookValue(sum(postings, DepreciationPosting::getBookValue));
+        report.setAssetCount(postings.size());
+        return report;
+    }
+
+    private boolean isAssetDepreciable(Asset asset) {
+        if (asset == null || asset.getPurchaseCost() == null || asset.getPurchaseCost().signum() <= 0) {
+            return false;
+        }
+        String status = asset.getStatus();
+        return status != null
+                && !status.equalsIgnoreCase("Disposed")
+                && !status.equalsIgnoreCase("Scrapped")
+                && !status.equalsIgnoreCase("Retired");
+    }
+
+    private boolean isAssetDepreciable(Asset asset, DepreciationPeriod period) {
+        return isAssetDepreciable(asset)
+                && (asset.getPurchaseDate() == null || !asset.getPurchaseDate().isAfter(period.endDate()));
+    }
+
     private int countConfiguredAssets(List<Asset> assets) {
         List<DepreciationParameters> allParams = parametersRepository.findAll();
         java.util.Set<Long> assetParamIds = allParams.stream()
-                .filter(p -> p.getAssetId() != null)
+                .filter(p -> Boolean.TRUE.equals(p.getIsActive()) && p.getAssetId() != null)
                 .map(DepreciationParameters::getAssetId)
                 .collect(java.util.stream.Collectors.toSet());
         java.util.Set<String> categoryParams = allParams.stream()
-                .filter(p -> p.getAssetId() == null && p.getCategory() != null)
+                .filter(p -> Boolean.TRUE.equals(p.getIsActive()) && p.getAssetId() == null && p.getCategory() != null)
                 .map(DepreciationParameters::getCategory)
                 .collect(java.util.stream.Collectors.toSet());
 
@@ -461,66 +557,16 @@ public class DepreciationService {
         return count;
     }
 
-    /**
-     * Get every depreciation posting (used by the dashboard filters/export, which need the
-     * full dataset rather than only the most-recent slice).
-     */
-    @Transactional(readOnly = true)
-    public List<DepreciationPosting> getAllPostings() {
-        return postingRepository.findAll().stream()
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .collect(Collectors.toList());
+    private BigDecimal sum(List<DepreciationPosting> postings,
+                           java.util.function.Function<DepreciationPosting, BigDecimal> extractor) {
+        return postings.stream().map(extractor).map(this::defaultDecimal).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    /**
-     * Get latest depreciation postings by period, most recent first
-     */
-    @Transactional(readOnly = true)
-    public List<DepreciationPosting> getLatestPostingsByPeriod(int limit) {
-        List<DepreciationPosting> allPostings = postingRepository.findAll();
-
-        return allPostings.stream()
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .limit(limit)
-                .collect(Collectors.toList());
+    private BigDecimal defaultDecimal(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 
-    /**
-     * Get the most recent depreciation period
-     */
-    @Transactional(readOnly = true)
-    public Optional<String> getLatestDepreciationPeriod() {
-        List<DepreciationPosting> allPostings = postingRepository.findAll();
-
-        if (allPostings.isEmpty()) {
-            return Optional.empty();
-        }
-
-        return allPostings.stream()
-                .map(DepreciationPosting::getDepreciationPeriod)
-                .sorted()
-                .reduce((first, second) -> second);
-    }
-
-    /**
-     * Get dashboard.html data for the depreciation management page
-     */
-    @Transactional(readOnly = true)
-    public DepreciationDashboardData getDashboardData(int postsToShow) {
-        DepreciationSummary summary = getLatestSummary();
-        List<DepreciationPosting> latestPostings = getLatestPostingsByPeriod(postsToShow);
-        Optional<String> lastPeriod = getLatestDepreciationPeriod();
-
-        LocalDateTime lastCalculatedAt = latestPostings.stream()
-                .map(DepreciationPosting::getCreatedAt)
-                .max(LocalDateTime::compareTo)
-                .orElse(null);
-
-        return new DepreciationDashboardData(
-                lastCalculatedAt,
-                lastPeriod.orElse(null),
-                latestPostings,
-                summary
-        );
+    private LocalDateTime safeCreatedAt(DepreciationPosting posting) {
+        return posting.getCreatedAt() != null ? posting.getCreatedAt() : LocalDateTime.MIN;
     }
 }

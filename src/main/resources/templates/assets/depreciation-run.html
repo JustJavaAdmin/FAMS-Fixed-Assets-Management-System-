@@ -338,7 +338,7 @@
                     }
                 } else {
                     dateStr = `${year}-12-31`;
-                    periodCode = `${year}-12`;
+                    periodCode = `${year}-A`;
                 }
 
                 document.getElementById('periodEndDateInput').value = dateStr;
@@ -364,7 +364,7 @@
                     const quarter = document.getElementById('quarterSelect').value;
                     periodCode = `${year}-${quarter}`;
                 } else {
-                    periodCode = `${year}-12`;
+                    periodCode = `${year}-A`;
                 }
 
                 const periodEndDate = document.getElementById('periodEndDateInput').value;

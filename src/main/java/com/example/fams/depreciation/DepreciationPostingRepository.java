@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
+import java.util.Optional;
 
 public interface DepreciationPostingRepository extends JpaRepository<DepreciationPosting, Long> {
 
@@ -25,8 +26,15 @@ public interface DepreciationPostingRepository extends JpaRepository<Depreciatio
     // Find latest posting for an asset
     DepreciationPosting findFirstByAssetIdOrderByDepreciationPeriodDesc(Long assetId);
 
+    Optional<DepreciationPosting> findFirstByAssetIdAndStatusNotOrderByPeriodEndDateDesc(Long assetId, DepreciationPostingStatus status);
+
+    Optional<DepreciationPosting> findFirstByAssetIdAndPeriodEndDateBeforeAndStatusNotOrderByPeriodEndDateDesc(
+            Long assetId, java.time.LocalDate periodEndDate, DepreciationPostingStatus status);
+
     // Find postings for a specific asset + period (used to replace on re-run)
     List<DepreciationPosting> findByAssetIdAndDepreciationPeriod(Long assetId, String depreciationPeriod);
+
+    List<DepreciationPosting> findByAssetIdAndDepreciationPeriodAndStatusNot(Long assetId, String depreciationPeriod, DepreciationPostingStatus status);
 
     // Find postings by fiscal year
     List<DepreciationPosting> findByFiscalYearOrderByDepreciationPeriodDescAssetCode(Integer fiscalYear);

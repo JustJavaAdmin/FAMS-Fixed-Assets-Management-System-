@@ -321,6 +321,15 @@ public class ReportService {
      * Convert Asset entity to ReportRow
      */
     private ReportRow assetToReportRow(Asset asset) {
+        java.util.Optional<com.example.fams.depreciation.DepreciationPosting> latestPosting =
+                depreciationService.getLatestPostingForAsset(asset.getId());
+        BigDecimal accumulatedDepreciation = latestPosting
+                .map(com.example.fams.depreciation.DepreciationPosting::getClosingAccumulatedDepreciation)
+                .orElse(BigDecimal.ZERO);
+        BigDecimal netBookValue = latestPosting
+                .map(com.example.fams.depreciation.DepreciationPosting::getBookValue)
+                .orElse(asset.getPurchaseCost() != null ? asset.getPurchaseCost() : BigDecimal.ZERO);
+
         return new ReportRow(
                 asset.getId(),
                 asset.getAssetCode(),
@@ -330,8 +339,8 @@ public class ReportService {
                 asset.getCustodian(),
                 asset.getPurchaseDate(),
                 asset.getPurchaseCost(),
-                BigDecimal.ZERO, // TODO: get from depreciation if available
-                asset.getPurchaseCost() != null ? asset.getPurchaseCost() : BigDecimal.ZERO,
+                accumulatedDepreciation,
+                netBookValue,
                 asset.getStatus()
         );
     }
