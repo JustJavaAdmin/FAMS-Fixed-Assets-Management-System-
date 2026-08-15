@@ -9,7 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/css/searchable-select.css" />
+    <link rel="stylesheet" th:href="@{/css/loading-system.css}" href="/css/loading-system.css" />
     <script defer src="/js/searchable-select.js"></script>
+    <script defer src="/js/loading-system.js"></script>
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -512,7 +514,15 @@
     </style>
     <link rel="stylesheet" th:href="@{/css/responsive.css}" href="/css/responsive.css" />
 </head>
-<body class="flex h-screen overflow-hidden antialiased text-[13px]">
+<body class="flex h-screen overflow-hidden antialiased text-[13px] page-loading">
+
+<!-- ══ PAGE LOADING OVERLAY (shown on initial load & full-page navigation) ══ -->
+<div id="fams-overlay-spinner" class="spinner-overlay active">
+    <div class="spinner-content">
+        <div class="spinner spinner-lg"></div>
+        <p>Loading FAMS...</p>
+    </div>
+</div>
 
 <!-- ══ SIDEBAR BACKDROP (mobile) ══ -->
 <div id="sidebar-backdrop"></div>

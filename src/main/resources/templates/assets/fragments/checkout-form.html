@@ -263,8 +263,29 @@
         }
     </style>
 
+    <!-- ====== SKELETON LOADER (initial form layout) ====== -->
+    <div id="checkoutFormSkeleton" class="skeleton-form" aria-hidden="true" style="padding: 4px 4px 0;">
+        <div class="skeleton skeleton-card" style="height: 96px; margin-bottom: 16px;"></div>
+        <div class="skeleton-form-group" style="margin-bottom: 16px;">
+            <div class="skeleton skeleton-form-label" style="width: 140px;"></div>
+            <div class="skeleton skeleton-form-row" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div class="skeleton skeleton-form-field"></div>
+                <div class="skeleton skeleton-form-field"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+        </div>
+        <div class="skeleton-form-group" style="margin-bottom: 16px;">
+            <div class="skeleton skeleton-form-label" style="width: 160px;"></div>
+            <div class="skeleton skeleton-form-field skeleton-form-field-textarea"></div>
+        </div>
+        <div class="skeleton-form-footer">
+            <div class="skeleton skeleton-button" style="width: 90px;"></div>
+            <div class="skeleton skeleton-button"></div>
+        </div>
+    </div>
+
     <!-- ====== CONTENT (unchanged except class additions) ====== -->
-    <div class="card-container">
+    <div class="card-container" id="checkoutFormContent" style="display: none;">
         <!-- Asset Information -->
         <div class="asset-info">
             <div class="asset-header">
@@ -386,13 +407,37 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        function initCheckoutForm() {
             const form = document.getElementById('checkoutForm');
             const submitBtn = document.getElementById('submitBtn');
+            const skeleton = document.getElementById('checkoutFormSkeleton');
+            const content = document.getElementById('checkoutFormContent');
 
+            // ---- Skeleton to Content Transition ----
+            if (skeleton && content) {
+                setTimeout(() => {
+                    skeleton.style.opacity = '0';
+                    skeleton.style.transition = 'opacity 300ms ease';
+                    setTimeout(() => {
+                        skeleton.style.display = 'none';
+                        content.style.display = 'block';
+                        content.style.opacity = '0';
+                        content.style.transition = 'opacity 300ms ease';
+                        requestAnimationFrame(() => { content.style.opacity = '1'; });
+                    }, 300);
+                }, 400);
+            }
+
+            // ---- Form Submission with Loading System ----
             form.addEventListener('submit', function() {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="spinner"></span>Processing...';
+                if (window.Loading) {
+                    window.Loading.showButtonSpinner(submitBtn, 'sm');
+                    const overlay = document.getElementById('loadingOverlay');
+                    if (overlay) overlay.classList.add('active');
+                } else {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner"></span>Processing...';
+                }
             });
 
             const dateInput = form.querySelector('input[name="dueReturnDate"]');
@@ -409,7 +454,15 @@
                     dateInput.value = null;
                 }
             });
-        });
+        }
+
+        // Works both as a full page (DOMContentLoaded pending) and as an
+        // AJAX-inserted fragment (DOMContentLoaded already fired).
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initCheckoutForm);
+        } else {
+            initCheckoutForm();
+        }
     </script>
 </div>
 
@@ -460,7 +513,24 @@
         .modal-fragment select.form-control { appearance:auto; }
     </style>
 
-    <div class="card-container">
+    <!-- ====== SKELETON LOADER (initial form layout) ====== -->
+    <div id="returnFormSkeleton" class="skeleton-form" aria-hidden="true" style="padding: 4px 4px 0;">
+        <div class="skeleton skeleton-card" style="height: 96px; margin-bottom: 16px;"></div>
+        <div class="skeleton-form-group" style="margin-bottom: 16px;">
+            <div class="skeleton skeleton-form-label" style="width: 160px;"></div>
+            <div class="skeleton skeleton-form-field"></div>
+        </div>
+        <div class="skeleton-form-group" style="margin-bottom: 16px;">
+            <div class="skeleton skeleton-form-label" style="width: 160px;"></div>
+            <div class="skeleton skeleton-form-field skeleton-form-field-textarea"></div>
+        </div>
+        <div class="skeleton-form-footer">
+            <div class="skeleton skeleton-button" style="width: 90px;"></div>
+            <div class="skeleton skeleton-button"></div>
+        </div>
+    </div>
+
+    <div class="card-container" id="returnFormContent" style="display: none;">
         <div class="asset-info">
             <div class="asset-header">
                 <div class="asset-icon">
@@ -526,14 +596,47 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        function initReturnForm() {
             const form = document.getElementById('returnForm');
             const submitBtn = document.getElementById('returnSubmitBtn');
+            const skeleton = document.getElementById('returnFormSkeleton');
+            const content = document.getElementById('returnFormContent');
+
+            // ---- Skeleton to Content Transition ----
+            if (skeleton && content) {
+                setTimeout(() => {
+                    skeleton.style.opacity = '0';
+                    skeleton.style.transition = 'opacity 300ms ease';
+                    setTimeout(() => {
+                        skeleton.style.display = 'none';
+                        content.style.display = 'block';
+                        content.style.opacity = '0';
+                        content.style.transition = 'opacity 300ms ease';
+                        requestAnimationFrame(() => { content.style.opacity = '1'; });
+                    }, 300);
+                }, 400);
+            }
+
+            // ---- Form Submission with Loading System ----
             form.addEventListener('submit', function() {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="spinner"></span>Processing...';
+                if (window.Loading) {
+                    window.Loading.showButtonSpinner(submitBtn, 'sm');
+                    const overlay = document.getElementById('loadingOverlay');
+                    if (overlay) overlay.classList.add('active');
+                } else {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner"></span>Processing...';
+                }
             });
-        });
+        }
+
+        // Works both as a full page (DOMContentLoaded pending) and as an
+        // AJAX-inserted fragment (DOMContentLoaded already fired).
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initReturnForm);
+        } else {
+            initReturnForm();
+        }
     </script>
 </div>
 
@@ -573,7 +676,24 @@
         .modal-fragment select.form-control { appearance:auto; }
     </style>
 
-    <div class="card-container">
+    <!-- ====== SKELETON LOADER (initial form layout) ====== -->
+    <div id="requestReturnFormSkeleton" class="skeleton-form" aria-hidden="true" style="padding: 4px 4px 0;">
+        <div class="skeleton skeleton-card" style="height: 96px; margin-bottom: 16px;"></div>
+        <div class="skeleton-form-group" style="margin-bottom: 16px;">
+            <div class="skeleton skeleton-form-label" style="width: 160px;"></div>
+            <div class="skeleton skeleton-form-field"></div>
+        </div>
+        <div class="skeleton-form-group" style="margin-bottom: 16px;">
+            <div class="skeleton skeleton-form-label" style="width: 160px;"></div>
+            <div class="skeleton skeleton-form-field skeleton-form-field-textarea"></div>
+        </div>
+        <div class="skeleton-form-footer">
+            <div class="skeleton skeleton-button" style="width: 90px;"></div>
+            <div class="skeleton skeleton-button"></div>
+        </div>
+    </div>
+
+    <div class="card-container" id="requestReturnFormContent" style="display: none;">
         <div class="asset-info">
             <div class="asset-header">
                 <div class="asset-icon">
@@ -639,14 +759,47 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        function initRequestReturnForm() {
             const form = document.getElementById('requestReturnForm');
             const submitBtn = document.getElementById('requestReturnSubmitBtn');
+            const skeleton = document.getElementById('requestReturnFormSkeleton');
+            const content = document.getElementById('requestReturnFormContent');
+
+            // ---- Skeleton to Content Transition ----
+            if (skeleton && content) {
+                setTimeout(() => {
+                    skeleton.style.opacity = '0';
+                    skeleton.style.transition = 'opacity 300ms ease';
+                    setTimeout(() => {
+                        skeleton.style.display = 'none';
+                        content.style.display = 'block';
+                        content.style.opacity = '0';
+                        content.style.transition = 'opacity 300ms ease';
+                        requestAnimationFrame(() => { content.style.opacity = '1'; });
+                    }, 300);
+                }, 400);
+            }
+
+            // ---- Form Submission with Loading System ----
             form.addEventListener('submit', function() {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="spinner"></span>Processing...';
+                if (window.Loading) {
+                    window.Loading.showButtonSpinner(submitBtn, 'sm');
+                    const overlay = document.getElementById('loadingOverlay');
+                    if (overlay) overlay.classList.add('active');
+                } else {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner"></span>Processing...';
+                }
             });
-        });
+        }
+
+        // Works both as a full page (DOMContentLoaded pending) and as an
+        // AJAX-inserted fragment (DOMContentLoaded already fired).
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initRequestReturnForm);
+        } else {
+            initRequestReturnForm();
+        }
     </script>
 </div>
 
@@ -696,7 +849,24 @@
         .modal-fragment select.form-control { appearance:auto; }
     </style>
 
-    <div class="card-container">
+    <!-- ====== SKELETON LOADER (initial form layout) ====== -->
+    <div id="verifyFormSkeleton" class="skeleton-form" aria-hidden="true" style="padding: 4px 4px 0;">
+        <div class="skeleton skeleton-card" style="height: 96px; margin-bottom: 16px;"></div>
+        <div class="skeleton-form-group" style="margin-bottom: 16px;">
+            <div class="skeleton skeleton-form-label" style="width: 140px;"></div>
+            <div class="skeleton skeleton-form-field"></div>
+        </div>
+        <div class="skeleton-form-group" style="margin-bottom: 16px;">
+            <div class="skeleton skeleton-form-label" style="width: 160px;"></div>
+            <div class="skeleton skeleton-form-field skeleton-form-field-textarea"></div>
+        </div>
+        <div class="skeleton-form-footer">
+            <div class="skeleton skeleton-button" style="width: 90px;"></div>
+            <div class="skeleton skeleton-button"></div>
+        </div>
+    </div>
+
+    <div class="card-container" id="verifyFormContent" style="display: none;">
         <div class="asset-info">
             <div class="asset-header">
                 <div class="asset-icon">
@@ -763,13 +933,46 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        function initVerifyForm() {
             const form = document.getElementById('verifyForm');
             const submitBtn = document.getElementById('verifySubmitBtn');
+            const skeleton = document.getElementById('verifyFormSkeleton');
+            const content = document.getElementById('verifyFormContent');
+
+            // ---- Skeleton to Content Transition ----
+            if (skeleton && content) {
+                setTimeout(() => {
+                    skeleton.style.opacity = '0';
+                    skeleton.style.transition = 'opacity 300ms ease';
+                    setTimeout(() => {
+                        skeleton.style.display = 'none';
+                        content.style.display = 'block';
+                        content.style.opacity = '0';
+                        content.style.transition = 'opacity 300ms ease';
+                        requestAnimationFrame(() => { content.style.opacity = '1'; });
+                    }, 300);
+                }, 400);
+            }
+
+            // ---- Form Submission with Loading System ----
             form.addEventListener('submit', function() {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="spinner"></span>Processing...';
+                if (window.Loading) {
+                    window.Loading.showButtonSpinner(submitBtn, 'sm');
+                    const overlay = document.getElementById('loadingOverlay');
+                    if (overlay) overlay.classList.add('active');
+                } else {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner"></span>Processing...';
+                }
             });
-        });
+        }
+
+        // Works both as a full page (DOMContentLoaded pending) and as an
+        // AJAX-inserted fragment (DOMContentLoaded already fired).
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initVerifyForm);
+        } else {
+            initVerifyForm();
+        }
     </script>
 </div>

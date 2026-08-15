@@ -915,6 +915,7 @@
             cursor: pointer;
             white-space: nowrap;
             min-height: 36px;
+            position: relative;
         }
         .filter-btn:hover {
             background: #e5e7eb;
@@ -922,6 +923,32 @@
         .filter-btn .material-symbols-outlined {
             font-size: 18px;
             color: #6b7280;
+        }
+        .filter-btn.loading {
+            color: transparent;
+            pointer-events: none;
+        }
+        .filter-btn.loading::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+        .filter-btn.loading .spinner {
+            display: inline-flex !important;
+        }
+
+        /* Search input loading state */
+        #asset-search.loading {
+            color: transparent;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23C0182A'%3E%3Ccircle cx='12' cy='12' r='10' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-dasharray='31.4 31.4'%3E%3CanimateTransform attributeName='transform' type='rotate' dur='1s' from='0 12 12' to='360 12 12' repeatCount='indefinite'/%3E%3C/circle%3E%3C/svg%3E");
+            background-size: 18px 18px;
+            background-position: right 10px center;
+            background-repeat: no-repeat;
+            pointer-events: none;
         }
 
         /* ── Header action buttons ── */
@@ -1023,22 +1050,22 @@
                 </div>
 
                 <!-- Filter buttons -->
-                <button class="filter-btn">
+                <button class="filter-btn" data-filter="lend-date">
                     <span class="material-symbols-outlined">event</span>
                     Lend date
                     <span class="material-symbols-outlined text-gray-400" style="font-size:16px;">expand_more</span>
                 </button>
-                <button class="filter-btn">
+                <button class="filter-btn" data-filter="return-date">
                     <span class="material-symbols-outlined">event</span>
                     Return date
                     <span class="material-symbols-outlined text-gray-400" style="font-size:16px;">expand_more</span>
                 </button>
-                <button class="filter-btn">
+                <button class="filter-btn" data-filter="category">
                     <span class="material-symbols-outlined">category</span>
                     Category
                     <span class="material-symbols-outlined text-gray-400" style="font-size:16px;">expand_more</span>
                 </button>
-                <button class="filter-btn">
+                <button class="filter-btn" data-filter="advance">
                     <span class="material-symbols-outlined">tune</span>
                     Advance Filter
                     <span class="material-symbols-outlined text-gray-400" style="font-size:16px;">expand_more</span>
@@ -1105,8 +1132,92 @@
                     </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200" id="assets-table-body">
+                    <!-- SKELETON LOADERS - Shown during initial page load -->
+                    <tr id="table-skeleton" class="skeleton-table-row" aria-hidden="true">
+                        <td colspan="7" class="px-6 py-4">
+                            <div class="skeleton-list">
+                                <div class="skeleton-table-row">
+                                    <div class="skeleton skeleton-circle-sm"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                </div>
+                                <div class="skeleton-table-row">
+                                    <div class="skeleton skeleton-circle-sm"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                </div>
+                                <div class="skeleton-table-row">
+                                    <div class="skeleton skeleton-circle-sm"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                </div>
+                                <div class="skeleton-table-row">
+                                    <div class="skeleton skeleton-circle-sm"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                </div>
+                                <div class="skeleton-table-row">
+                                    <div class="skeleton skeleton-circle-sm"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                </div>
+                                <div class="skeleton-table-row">
+                                    <div class="skeleton skeleton-circle-sm"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                    <div class="skeleton skeleton-badge"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Loading more row for pagination -->
+                    <tr id="load-more-row" class="hidden table-row-spinner">
+                        <td colspan="7" class="px-6 py-4 text-center">
+                            <div class="flex items-center justify-center gap-3">
+                                <div class="spinner spinner-sm"></div>
+                                <span>Loading more assets...</span>
+                            </div>
+                        </td>
+                    </tr>
+
                     <!-- Empty state -->
-                    <tr th:if="${#lists.isEmpty(assets)}">
+                    <tr th:if="${#lists.isEmpty(assets)}" id="empty-state-row">
                         <td colspan="7" class="px-6 py-12 text-center">
                             <div class="flex flex-col items-center justify-center">
                                 <span class="material-symbols-outlined text-gray-400 text-5xl mb-4">inventory_2</span>
@@ -1122,7 +1233,8 @@
 
                     <!-- Data rows (with safe expressions) -->
                     <tr th:each="asset : ${assets}" th:unless="${#lists.isEmpty(assets)}"
-                        class="asset-row hover:bg-gray-50 transition-colors" th:data-asset-id="${asset.id}">
+                        class="asset-row hover:bg-gray-50 transition-colors" th:data-asset-id="${asset.id}"
+                        style="display: none;">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" class="asset-checkbox" th:data-asset-id="${asset.id}" aria-label="Select asset">
@@ -1943,6 +2055,90 @@
 
             // Ensure dropdowns are closed on page load
             closeAllDropdowns();
+
+            // ---- Skeleton to Content Transition ----
+            const tableSkeleton = document.getElementById('table-skeleton');
+            const emptyStateRow = document.getElementById('empty-state-row');
+            const loadMoreRow = document.getElementById('load-more-row');
+
+            if (tableSkeleton) {
+                // Show skeleton initially, then transition to real content
+                setTimeout(() => {
+                    tableSkeleton.style.opacity = '0';
+                    tableSkeleton.style.transition = 'opacity 300ms ease';
+                    setTimeout(() => {
+                        tableSkeleton.style.display = 'none';
+                        // Show actual content rows (they were hidden by skeleton)
+                        rows.forEach(row => {
+                            row.style.display = '';
+                            row.style.opacity = '0';
+                            row.style.transition = 'opacity 300ms ease';
+                        });
+                        // Trigger reflow
+                        void document.body.offsetHeight;
+                        rows.forEach(row => {
+                            row.style.opacity = '1';
+                        });
+                        if (emptyStateRow) {
+                            emptyStateRow.style.display = '';
+                            emptyStateRow.style.opacity = '0';
+                            emptyStateRow.style.transition = 'opacity 300ms ease';
+                            void document.body.offsetHeight;
+                            emptyStateRow.style.opacity = '1';
+                        }
+                    }, 300);
+                }, 400);
+            }
+
+            // ---- Filter Spinner (indeterminate) ----
+            let filterDebounceTimer = null;
+            const originalFilterRows = filterRows;
+            filterRows = function() {
+                // Show filter spinner on filter buttons and search input
+                const filterBtns = document.querySelectorAll('.filter-btn');
+                const searchInput = document.getElementById('asset-search');
+                filterBtns.forEach(btn => {
+                    btn.classList.add('loading');
+                });
+                if (searchInput) searchInput.classList.add('loading');
+
+                clearTimeout(filterDebounceTimer);
+                filterDebounceTimer = setTimeout(() => {
+                    originalFilterRows();
+                    filterBtns.forEach(btn => {
+                        btn.classList.remove('loading');
+                    });
+                    if (searchInput) searchInput.classList.remove('loading');
+                }, 300);
+            };
+
+            // ---- Load More / Pagination Spinner ----
+            // Expose functions for pagination if needed
+            window.showTableLoadMore = function() {
+                if (loadMoreRow) {
+                    loadMoreRow.classList.remove('hidden');
+                    loadMoreRow.classList.add('active');
+                }
+            };
+
+            window.hideTableLoadMore = function() {
+                if (loadMoreRow) {
+                    loadMoreRow.classList.add('hidden');
+                    loadMoreRow.classList.remove('active');
+                }
+            };
+
+            // ---- Filter Action Spinner (for Advance Filter button) ----
+            const advanceFilterBtn = document.querySelector('.filter-btn[data-filter="advance"]');
+            if (advanceFilterBtn) {
+                advanceFilterBtn.addEventListener('click', function() {
+                    this.classList.add('loading');
+                    // Simulate filter action - remove loading after action completes
+                    setTimeout(() => {
+                        this.classList.remove('loading');
+                    }, 1000);
+                });
+            }
 
         })();
     </script>

@@ -32,7 +32,39 @@
         <p class="font-body-medium" th:text="${errorMessage}">Unable to submit workflow.</p>
     </div>
 
-    <form th:action="@{/assets/lifecycle/workflows}" th:object="${form}" method="post" class="bg-surface-card border border-border-default rounded-xl card-shadow overflow-hidden" data-spinner-form>
+    <!-- ─── SKELETON LOADER - Shown during initial page load ─── -->
+    <div id="transfer-form-skeleton" class="skeleton-form" aria-hidden="true">
+        <div class="skeleton-form-row">
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+        </div>
+        <div class="skeleton-form-row">
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+        </div>
+        <div class="skeleton-form-group">
+            <div class="skeleton skeleton-form-label" style="width: 140px;"></div>
+            <div class="skeleton skeleton-form-field skeleton-form-field-textarea"></div>
+        </div>
+        <div class="skeleton-form-footer">
+            <div class="skeleton skeleton-button"></div>
+            <div class="skeleton skeleton-button" style="width: 90px;"></div>
+        </div>
+    </div>
+
+    <form id="transfer-form" th:action="@{/assets/lifecycle/workflows}" th:object="${form}" method="post" class="bg-surface-card border border-border-default rounded-xl card-shadow overflow-hidden" style="display: none;">
         <input type="hidden" th:field="*{assetId}">
         <input type="hidden" th:field="*{type}">
         <div class="p-6 border-b border-border-default bg-surface-canvas/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -111,7 +143,7 @@
 
         <div class="p-5 border-t border-border-default bg-surface-canvas/30 flex justify-end gap-3">
             <a th:href="@{/assets/{id}(id=${asset.id})}" class="h-[38px] px-5 text-secondary font-body-medium hover:text-on-surface inline-flex items-center">Cancel</a>
-            <button type="submit" class="h-[38px] px-6 bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all inline-flex items-center gap-2">
+            <button type="submit" id="transfer-submit-btn" class="h-[38px] px-6 bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all inline-flex items-center gap-2">
                 <span class="material-symbols-outlined text-[18px] submit-icon">send</span>
                 <span class="hidden submit-spinner w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
                 <span>Submit Transfer</span>
@@ -119,6 +151,37 @@
         </div>
     </form>
     <script>
+        // Skeleton to content transition
+        const transferSkeleton = document.getElementById('transfer-form-skeleton');
+        const transferForm = document.getElementById('transfer-form');
+
+        if (transferSkeleton && transferForm) {
+            setTimeout(() => {
+                transferSkeleton.style.opacity = '0';
+                transferSkeleton.style.transition = 'opacity 300ms ease';
+                setTimeout(() => {
+                    transferSkeleton.style.display = 'none';
+                    transferForm.style.display = 'block';
+                    transferForm.style.opacity = '0';
+                    transferForm.style.transition = 'opacity 300ms ease';
+                    requestAnimationFrame(() => {
+                        transferForm.style.opacity = '1';
+                    });
+                }, 300);
+            }, 400);
+        }
+
+        // Form submission with new Loading system
+        const transferBtn = document.getElementById('transfer-submit-btn');
+        if (transferBtn && window.Loading) {
+            transferBtn.closest('form').addEventListener('submit', function(e) {
+                if (!transferBtn.classList.contains('loading')) {
+                    window.Loading.showButtonSpinner(transferBtn, 'sm');
+                }
+            });
+        }
+
+        // Fallback for older spinner system
         document.querySelectorAll('[data-spinner-form]').forEach(form => form.addEventListener('submit', () => {
             form.querySelector('.submit-icon')?.classList.add('hidden');
             form.querySelector('.submit-spinner')?.classList.remove('hidden');

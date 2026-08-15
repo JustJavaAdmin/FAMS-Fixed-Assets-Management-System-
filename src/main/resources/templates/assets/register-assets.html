@@ -524,8 +524,60 @@
                 </a>
             </div>
 
+            <!-- ─── SKELETON LOADER - Shown during initial page load ─── -->
+            <div id="register-form-skeleton" class="skeleton-form flex-1" aria-hidden="true" style="padding: 24px;">
+                <div class="skeleton-form-row">
+                    <div class="skeleton-form-group">
+                        <div class="skeleton skeleton-form-label"></div>
+                        <div class="skeleton skeleton-form-field"></div>
+                    </div>
+                    <div class="skeleton-form-group">
+                        <div class="skeleton skeleton-form-label"></div>
+                        <div class="skeleton skeleton-form-field"></div>
+                    </div>
+                </div>
+                <div class="skeleton-form-row">
+                    <div class="skeleton-form-group">
+                        <div class="skeleton skeleton-form-label"></div>
+                        <div class="skeleton skeleton-form-field"></div>
+                    </div>
+                    <div class="skeleton-form-group">
+                        <div class="skeleton skeleton-form-label"></div>
+                        <div class="skeleton skeleton-form-field"></div>
+                    </div>
+                </div>
+                <div class="skeleton-form-row">
+                    <div class="skeleton-form-group">
+                        <div class="skeleton skeleton-form-label"></div>
+                        <div class="skeleton skeleton-form-field"></div>
+                    </div>
+                    <div class="skeleton-form-group">
+                        <div class="skeleton skeleton-form-label"></div>
+                        <div class="skeleton skeleton-form-field"></div>
+                    </div>
+                </div>
+                <div class="skeleton-form-row">
+                    <div class="skeleton-form-group">
+                        <div class="skeleton skeleton-form-label"></div>
+                        <div class="skeleton skeleton-form-field"></div>
+                    </div>
+                    <div class="skeleton-form-group">
+                        <div class="skeleton skeleton-form-label"></div>
+                        <div class="skeleton skeleton-form-field"></div>
+                    </div>
+                </div>
+                <div class="skeleton-form-group">
+                    <div class="skeleton skeleton-form-label" style="width: 140px;"></div>
+                    <div class="skeleton skeleton-form-field skeleton-form-field-textarea"></div>
+                </div>
+                <div class="skeleton-form-footer">
+                    <div class="skeleton skeleton-button"></div>
+                    <div class="skeleton skeleton-button" style="width: 90px;"></div>
+                </div>
+            </div>
+
             <!-- ─── Split ─── -->
-            <div class="split">
+            <div class="split" id="register-split" style="display: none;">
 
                 <!-- ═══ LEFT: FORM ═══ -->
                 <div class="left-col scrollbar-hide">
@@ -748,6 +800,7 @@
                 </div>
             </div>
 
+        </div><!-- /split -->
         </div><!-- /page-root -->
 
         <!-- ─── Page Loader ─── -->
@@ -1032,6 +1085,41 @@
                         pageLoader.classList.add('hidden');
                         pageLoader.classList.remove('flex');
                     }
+                }
+
+                // ---- Skeleton to Content Transition ----
+                const formSkeleton = document.getElementById('register-form-skeleton');
+                const registerSplit = document.getElementById('register-split');
+
+                if (formSkeleton && registerSplit) {
+                    setTimeout(() => {
+                        formSkeleton.style.opacity = '0';
+                        formSkeleton.style.transition = 'opacity 300ms ease';
+                        setTimeout(() => {
+                            formSkeleton.style.display = 'none';
+                            registerSplit.style.display = 'flex';
+                            registerSplit.style.opacity = '0';
+                            registerSplit.style.transition = 'opacity 300ms ease';
+                            requestAnimationFrame(() => {
+                                registerSplit.style.opacity = '1';
+                            });
+                        }, 300);
+                    }, 400);
+                }
+
+                // ---- Form Submission with Loading System ----
+                if (assetForm && assetBtn && window.Loading) {
+                    assetForm.addEventListener('submit', function(e) {
+                        // Let the default loading system handle it
+                        if (!assetBtn.classList.contains('loading')) {
+                            window.Loading.showButtonSpinner(assetBtn, 'sm');
+                            if (assetLabel) assetLabel.textContent = 'Registering…';
+                        }
+                        if (pageLoader) {
+                            pageLoader.classList.remove('hidden');
+                            pageLoader.classList.add('flex');
+                        }
+                    });
                 }
             })();
         </script>

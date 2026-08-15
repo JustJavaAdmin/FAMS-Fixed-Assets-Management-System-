@@ -73,7 +73,49 @@
         </a>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- ─── SKELETON LOADER - Shown during initial page load ─── -->
+    <div id="depreciation-config-skeleton" class="skeleton-form mb-6" aria-hidden="true">
+        <div class="skeleton-form-row">
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+        </div>
+        <div class="skeleton-form-row">
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+        </div>
+        <div class="skeleton-form-row">
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+        </div>
+        <div class="skeleton-form-group">
+            <div class="skeleton skeleton-form-label" style="width: 140px;"></div>
+            <div class="skeleton skeleton-form-field skeleton-form-field-textarea"></div>
+        </div>
+        <div class="skeleton-form-footer">
+            <div class="skeleton skeleton-button"></div>
+            <div class="skeleton skeleton-button" style="width: 90px;"></div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="depreciation-config-content" style="display: none;">
         <!-- Form Section -->
         <div class="lg:col-span-2 bg-surface-card border border-border-default rounded-xl card-shadow overflow-hidden">
             <div class="p-5 border-b border-border-default">
@@ -376,6 +418,27 @@
                 }, 4000);
             }
         });
+    </script>
+    <script>
+        // Skeleton to content transition
+        const depreciationSkeleton = document.getElementById('depreciation-config-skeleton');
+        const depreciationContent = document.getElementById('depreciation-config-content');
+
+        if (depreciationSkeleton && depreciationContent) {
+            setTimeout(() => {
+                depreciationSkeleton.style.opacity = '0';
+                depreciationSkeleton.style.transition = 'opacity 300ms ease';
+                setTimeout(() => {
+                    depreciationSkeleton.style.display = 'none';
+                    depreciationContent.style.display = 'grid';
+                    depreciationContent.style.opacity = '0';
+                    depreciationContent.style.transition = 'opacity 300ms ease';
+                    requestAnimationFrame(() => {
+                        depreciationContent.style.opacity = '1';
+                    });
+                }, 300);
+            }, 400);
+        }
     </script>
     <style>
         @keyframes fade-in {

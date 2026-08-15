@@ -49,7 +49,41 @@
 
     <div id="alertContainer" class="fixed top-24 right-4 z-40 space-y-2 max-w-sm"></div>
 
-    <div class="bg-surface-card border border-border-default rounded-xl p-4">
+    <!-- ─── SKELETON LOADER - Shown during initial page load ─── -->
+    <div id="journals-skeleton" class="skeleton-form mb-6" aria-hidden="true">
+        <div class="skeleton-form-row">
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+        </div>
+        <div class="skeleton-form-row">
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+        </div>
+        <div class="skeleton-form-row">
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+            <div class="skeleton-form-group">
+                <div class="skeleton skeleton-form-label"></div>
+                <div class="skeleton skeleton-form-field"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-surface-card border border-border-default rounded-xl p-4" id="journals-content" style="display: none;">
         <div class="flex flex-wrap gap-3 items-end">
             <div class="filter-group">
                 <label class="text-label-small text-secondary">Period</label>
@@ -367,6 +401,26 @@
             alert.textContent = message;
             container.appendChild(alert);
             setTimeout(() => alert.remove(), 4000);
+        }
+
+        // Skeleton to content transition
+        const journalsSkeleton = document.getElementById('journals-skeleton');
+        const journalsContent = document.getElementById('journals-content');
+
+        if (journalsSkeleton && journalsContent) {
+            setTimeout(() => {
+                journalsSkeleton.style.opacity = '0';
+                journalsSkeleton.style.transition = 'opacity 300ms ease';
+                setTimeout(() => {
+                    journalsSkeleton.style.display = 'none';
+                    journalsContent.style.display = 'block';
+                    journalsContent.style.opacity = '0';
+                    journalsContent.style.transition = 'opacity 300ms ease';
+                    requestAnimationFrame(() => {
+                        journalsContent.style.opacity = '1';
+                    });
+                }, 300);
+            }, 400);
         }
     </script>
 </main>

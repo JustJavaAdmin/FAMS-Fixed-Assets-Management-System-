@@ -287,6 +287,113 @@
 
 <main id="main-content" class="space-y-6" layout:fragment="content">
 
+    <!-- ─── SKELETON LOADERS - Shown during initial page load ─── -->
+    <div id="checkout-details-skeleton" class="space-y-6" aria-hidden="true">
+        <!-- Header Skeleton -->
+        <div class="skeleton-card">
+            <div class="skeleton-card-header">
+                <div class="skeleton skeleton-title" style="width: 200px;"></div>
+                <div class="skeleton skeleton-button"></div>
+                <div class="skeleton skeleton-button" style="width: 110px;"></div>
+            </div>
+        </div>
+
+        <!-- Status Alert Skeleton -->
+        <div class="skeleton skeleton-rect" style="height: 64px; width: 100%;"></div>
+
+        <!-- Asset Information Card Skeleton -->
+        <div class="skeleton-card">
+            <div class="skeleton skeleton-title" style="width: 180px; margin-bottom: 16px;"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+            </div>
+        </div>
+
+        <!-- Checkout Details Card Skeleton -->
+        <div class="skeleton-card">
+            <div class="skeleton skeleton-title" style="width: 160px; margin-bottom: 16px;"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-badge"></div>
+            </div>
+            <div class="skeleton skeleton-rect" style="height: 1px; width: 100%; margin: 16px 0;"></div>
+            <div class="skeleton skeleton-text" style="width: 100%; margin-bottom: 8px;"></div>
+            <div class="skeleton skeleton-text" style="width: 100%;"></div>
+            <div class="skeleton skeleton-text" style="width: 50%;"></div>
+        </div>
+
+        <!-- Return Details Card Skeleton (conditional) -->
+        <div id="return-skeleton" class="skeleton-card hidden">
+            <div class="skeleton skeleton-title" style="width: 150px; margin-bottom: 16px;"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+            </div>
+            <div class="skeleton skeleton-rect" style="height: 1px; width: 100%; margin: 16px 0;"></div>
+            <div class="skeleton skeleton-text" style="width: 100%;"></div>
+        </div>
+
+        <!-- Verification Details Card Skeleton (conditional) -->
+        <div id="verification-skeleton" class="skeleton-card hidden">
+            <div class="skeleton skeleton-title" style="width: 180px; margin-bottom: 16px;"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+            </div>
+        </div>
+
+        <!-- Timeline Skeleton -->
+        <div class="skeleton-card">
+            <div class="skeleton skeleton-title" style="width: 100px; margin-bottom: 16px;"></div>
+            <div class="space-y-5">
+                <div class="flex gap-4">
+                    <div class="skeleton skeleton-circle" style="width: 24px; height: 24px; flex-shrink: 0; margin-top: 4px;"></div>
+                    <div class="flex-1 space-y-2">
+                        <div class="skeleton skeleton-text" style="width: 60%;"></div>
+                        <div class="skeleton skeleton-text-sm" style="width: 40%;"></div>
+                        <div class="skeleton skeleton-text-sm" style="width: 80%;"></div>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="skeleton skeleton-circle" style="width: 24px; height: 24px; flex-shrink: 0; margin-top: 4px;"></div>
+                    <div class="flex-1 space-y-2">
+                        <div class="skeleton skeleton-text" style="width: 60%;"></div>
+                        <div class="skeleton skeleton-text-sm" style="width: 40%;"></div>
+                        <div class="skeleton skeleton-text-sm" style="width: 80%;"></div>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="skeleton skeleton-circle" style="width: 24px; height: 24px; flex-shrink: 0; margin-top: 4px;"></div>
+                    <div class="flex-1 space-y-2">
+                        <div class="skeleton skeleton-text" style="width: 60%;"></div>
+                        <div class="skeleton skeleton-text-sm" style="width: 40%;"></div>
+                        <div class="skeleton skeleton-text-sm" style="width: 80%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons Skeleton -->
+        <div class="skeleton-card flex gap-3">
+            <div class="skeleton skeleton-button"></div>
+            <div class="skeleton skeleton-button" style="width: 160px;"></div>
+            <div class="skeleton skeleton-button" style="width: 160px;"></div>
+        </div>
+    </div>
+
+    <!-- Real Content - Hidden initially -->
+    <div id="checkout-details-content" class="space-y-6" style="display: none;">
+
     <!-- Header -->
     <div class="card">
         <div class="detail-header">
@@ -494,7 +601,47 @@
         </a>
     </div>
 
+    </div> <!-- close #checkout-details-content -->
+
 </main>
+
+<script>
+    // Skeleton to content transition
+    const checkoutSkeleton = document.getElementById('checkout-details-skeleton');
+    const checkoutContent = document.getElementById('checkout-details-content');
+    const returnSkeleton = document.getElementById('return-skeleton');
+    const verificationSkeleton = document.getElementById('verification-skeleton');
+
+    if (checkoutSkeleton && checkoutContent) {
+        setTimeout(() => {
+            checkoutSkeleton.style.opacity = '0';
+            checkoutSkeleton.style.transition = 'opacity 300ms ease';
+            setTimeout(() => {
+                checkoutSkeleton.style.display = 'none';
+                checkoutContent.style.display = 'block';
+                checkoutContent.style.opacity = '0';
+                checkoutContent.style.transition = 'opacity 300ms ease';
+                requestAnimationFrame(() => {
+                    checkoutContent.style.opacity = '1';
+                });
+            }, 300);
+        }, 400);
+    }
+
+    // Show/hide conditional skeleton sections based on data
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if return details should be shown
+        const returnDate = /*[[${checkout.returnDate}]]*/ null;
+        const verifiedAt = /*[[${checkout.verifiedAt}]]*/ null;
+
+        if (returnDate && returnSkeleton) {
+            returnSkeleton.classList.remove('hidden');
+        }
+        if (verifiedAt && verificationSkeleton) {
+            verificationSkeleton.classList.remove('hidden');
+        }
+    });
+</script>
 
 </body>
 </html>

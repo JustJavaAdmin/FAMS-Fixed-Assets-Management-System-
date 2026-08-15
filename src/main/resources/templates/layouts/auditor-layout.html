@@ -411,8 +411,18 @@
         }
     </style>
     <link rel="stylesheet" th:href="@{/css/responsive.css}" href="/css/responsive.css" />
+    <link rel="stylesheet" th:href="@{/css/loading-system.css}" href="/css/loading-system.css" />
+    <script th:src="@{/js/loading-system.js}" defer></script>
 </head>
-<body class="flex h-screen overflow-hidden antialiased text-[13px]">
+<body class="flex h-screen overflow-hidden antialiased text-[13px] page-loading">
+
+<!-- ══ PAGE LOADING OVERLAY (shown on initial load & full-page navigation) ══ -->
+<div id="fams-overlay-spinner" class="spinner-overlay active">
+    <div class="spinner-content">
+        <div class="spinner spinner-lg"></div>
+        <p>Loading FAMS...</p>
+    </div>
+</div>
 
 <!-- ══ SIDEBAR BACKDROP (mobile) ══ -->
 <div id="sidebar-backdrop"></div>

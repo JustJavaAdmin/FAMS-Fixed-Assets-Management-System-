@@ -1,0 +1,566 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   FAMS Loading System - Professional Spinners & Skeleton Loaders
+   Brand Color: #C0182A (Red) | Consistent enterprise-grade loading experience
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── CSS Custom Properties ─── */
+:root {
+  /* Spinner Colors */
+  --spinner-primary: #C0182A;
+  --spinner-primary-light: #F5E4E6;
+  --spinner-primary-dark: #8F0F1E;
+  --spinner-track: #E4E6EA;
+  --spinner-bg: rgba(255, 255, 255, 0.92);
+  --spinner-overlay-bg: rgba(255, 255, 255, 0.88);
+
+  /* Skeleton Colors */
+  --skeleton-base: #E4E6EA;
+  --skeleton-highlight: #F4F5F7;
+  --skeleton-shimmer: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-index layers */
+  --z-skeleton: 10;
+  --z-spinner: 100;
+  --z-overlay: 9999;
+  --z-modal: 10000;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SPINNER SYSTEM
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Base spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ─── Spinner Sizes ─── */
+.spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 3px solid var(--spinner-track);
+  border-top-color: var(--spinner-primary);
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+.spinner-xs   { width: 14px; height: 14px; border-width: 2px; }
+.spinner-sm   { width: 20px; height: 20px; border-width: 2.5px; }
+.spinner-md   { width: 28px; height: 28px; border-width: 3px; }
+.spinner-lg   { width: 40px; height: 40px; border-width: 3.5px; }
+.spinner-xl   { width: 56px; height: 56px; border-width: 4px; }
+
+/* ─── Spinner Variants ─── */
+
+/* Default - inline */
+.spinner-inline {
+	display: inline-flex;
+	vertical-align: middle;
+}
+
+/* Centered in container */
+.spinner-center {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 200px;
+}
+
+/* ─── Content Area Loading Overlay ─── */
+/* Professional loading state for content sections */
+.content-loading-overlay {
+	position: absolute;
+	inset: 0;
+	background: rgba(255, 255, 255, 0.72);
+	backdrop-filter: blur(3px);
+	-webkit-backdrop-filter: blur(3px);
+	display: none;
+	align-items: center;
+	justify-content: center;
+	z-index: 999;
+	border-radius: inherit;
+	opacity: 0;
+	transition: opacity var(--transition-fast);
+}
+.content-loading-overlay.active {
+	display: flex;
+	opacity: 1;
+}
+.content-loading-overlay .spinner-wrapper {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	animation: slideUp var(--transition-normal);
+}
+.content-loading-overlay .spinner-wrapper p {
+	color: #5d5e65;
+	font-size: 13px;
+	font-weight: 500;
+	margin: 0;
+	text-align: center;
+}
+
+/* ─── Content Section Loading Container ─── */
+.content-section-loading {
+	position: relative;
+	overflow: hidden;
+	border-radius: 12px;
+}
+.content-section-loading > * {
+	pointer-events: none;
+	user-select: none;
+}
+
+/* Overlay spinner (full screen - for page navigation) */
+.spinner-overlay {
+	position: fixed;
+	inset: 0;
+	background: var(--spinner-overlay-bg);
+	backdrop-filter: blur(4px);
+	-webkit-backdrop-filter: blur(4px);
+	display: none;
+	align-items: center;
+	justify-content: center;
+	z-index: var(--z-overlay);
+	transition: opacity var(--transition-fast);
+}
+.spinner-overlay.active { display: flex; }
+.spinner-overlay .spinner-content {
+	text-align: center;
+	background: white;
+	padding: 32px 40px;
+	border-radius: 12px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
+	border: 1px solid var(--spinner-track);
+	animation: slideUp var(--transition-normal);
+}
+.spinner-overlay .spinner-content p {
+	margin-top: 16px;
+	color: #5d5e65;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+/* Button spinner (inside buttons) */
+.btn .spinner {
+	margin-right: 8px;
+}
+.btn .spinner:last-child { margin-right: 0; margin-left: 8px; }
+.btn.loading .btn-text { opacity: 0; }
+.btn.loading .spinner { display: inline-flex !important; }
+
+/* Card spinner (for card refresh) */
+.card-spinner {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	background: white;
+	backdrop-filter: blur(4px);
+	border: 1px solid var(--spinner-track);
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	z-index: var(--z-spinner);
+}
+.card-spinner.active { display: flex; }
+.card-spinner .spinner { width: 20px; height: 20px; border-width: 2.5px; }
+
+/* Table row spinner */
+.table-row-spinner {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: #5d5e65;
+  font-size: 13px;
+}
+.table-row-spinner.active { display: flex; }
+
+/* ─── Loading States ─── */
+.loading { position: relative; }
+.loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--spinner-overlay-bg);
+  backdrop-filter: blur(2px);
+  border-radius: inherit;
+  z-index: var(--z-spinner);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.loading .spinner { position: relative; z-index: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SKELETON LOADER SYSTEM
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Base skeleton */
+.skeleton {
+  background: var(--skeleton-shimmer);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Skeleton shapes */
+.skeleton-text { height: 1rem; }
+.skeleton-text-sm { height: 0.875rem; }
+.skeleton-text-lg { height: 1.25rem; }
+.skeleton-title { height: 1.5rem; font-weight: 600; }
+.skeleton-heading { height: 2rem; }
+
+.skeleton-circle {
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+}
+.skeleton-circle-sm { width: 28px; height: 28px; }
+.skeleton-circle-lg { width: 56px; height: 56px; }
+.skeleton-circle-xl { width: 72px; height: 72px; }
+
+.skeleton-square {
+  border-radius: 8px;
+}
+.skeleton-square-sm { width: 32px; height: 32px; }
+.skeleton-square-md { width: 48px; height: 48px; }
+.skeleton-square-lg { width: 80px; height: 80px; }
+
+.skeleton-rect {
+  border-radius: 8px;
+}
+.skeleton-rect-sm { width: 80px; height: 20px; }
+.skeleton-rect-md { width: 160px; height: 24px; }
+.skeleton-rect-lg { width: 280px; height: 28px; }
+.skeleton-rect-xl { width: 100%; height: 32px; }
+
+.skeleton-avatar { border-radius: 50%; width: 36px; height: 36px; }
+.skeleton-badge { border-radius: 9999px; height: 20px; width: 72px; }
+.skeleton-button { border-radius: 8px; height: 36px; width: 120px; }
+.skeleton-input { border-radius: 8px; height: 38px; width: 100%; }
+
+/* ─── Skeleton Card Variants ─── */
+
+/* Metric Card Skeleton */
+.skeleton-metric-card {
+  background: white;
+  border: 1px solid var(--spinner-track);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.skeleton-metric-card .skeleton-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.skeleton-metric-card .skeleton-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+.skeleton-metric-card .skeleton-label {
+  width: 100px;
+  height: 12px;
+  border-radius: 4px;
+}
+.skeleton-metric-card .skeleton-value {
+  width: 80px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+/* Table Row Skeleton */
+.skeleton-table-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 1fr 1fr 120px 100px 100px 100px 100px;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--spinner-track);
+}
+.skeleton-table-row:last-child { border-bottom: none; }
+
+/* Generic Card Skeleton (reusable for any card-based content) */
+.skeleton-card {
+  background: white;
+  border: 1px solid var(--spinner-track);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+.skeleton-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+/* Dashboard Grid Skeleton */
+.skeleton-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
+.skeleton-dashboard-card {
+  background: white;
+  border: 1px solid var(--spinner-track);
+  border-radius: 12px;
+  padding: 24px;
+}
+.skeleton-dashboard-card .skeleton-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.skeleton-dashboard-card .skeleton-chart {
+  height: 200px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+/* Form Skeleton */
+.skeleton-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.skeleton-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.skeleton-form-label { width: 100px; height: 14px; }
+.skeleton-form-field { width: 100%; height: 44px; border-radius: 8px; }
+.skeleton-form-field-textarea { min-height: 100px; }
+.skeleton-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 640px) {
+  .skeleton-form-row { grid-template-columns: 1fr; }
+}
+
+/* List Skeleton */
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.skeleton-list-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: white;
+  border: 1px solid var(--spinner-track);
+  border-radius: 10px;
+}
+.skeleton-list-item .skeleton-avatar { flex-shrink: 0; }
+.skeleton-list-item .skeleton-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.skeleton-list-item .skeleton-title { width: 60%; }
+.skeleton-list-item .skeleton-meta { width: 40%; height: 12px; }
+
+/* Chart Skeleton */
+.skeleton-chart {
+  height: 240px;
+  border-radius: 12px;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Modal Skeleton */
+.skeleton-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+}
+.skeleton-modal .skeleton-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--spinner-track);
+}
+.skeleton-modal .skeleton-icon { width: 48px; height: 48px; border-radius: 12px; }
+.skeleton-modal .skeleton-title { width: 200px; height: 24px; }
+.skeleton-modal .skeleton-body { display: flex; flex-direction: column; gap: 16px; }
+.skeleton-modal .skeleton-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--spinner-track);
+}
+.skeleton-modal .skeleton-button { width: 100px; height: 36px; }
+
+/* ─── Utility Classes ─── */
+.skeleton-hidden { display: none !important; }
+.skeleton-visible { display: block !important; }
+
+/* Show skeleton while loading */
+.has-skeleton .skeleton { display: block; }
+.has-skeleton.loaded .skeleton { display: none !important; }
+.has-skeleton.loaded .real-content { display: block !important; }
+.has-skeleton .real-content { display: none; }
+
+/* Pulse variant for subtle loading */
+.skeleton-pulse {
+  animation: pulse 2s ease-in-out infinite;
+  background: var(--skeleton-base);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .spinner,
+  .spinner-overlay .spinner-content {
+    animation: none !important;
+    transition: none !important;
+  }
+  .skeleton {
+    background: var(--skeleton-base);
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --spinner-bg: rgba(30, 30, 30, 0.92);
+    --spinner-overlay-bg: rgba(20, 20, 20, 0.88);
+    --spinner-track: #3a3a3a;
+    --skeleton-base: #2a2a2a;
+    --skeleton-highlight: #3a3a3a;
+    --skeleton-shimmer: linear-gradient(
+      90deg,
+      var(--skeleton-base) 25%,
+      var(--skeleton-highlight) 50%,
+      var(--skeleton-base) 75%
+    );
+  }
+}
+
+/* Print styles */
+@media print {
+  .spinner,
+  .spinner-overlay,
+  .skeleton,
+  .card-spinner,
+  .table-row-spinner {
+    display: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   JS HELPER CLASSES (for programmatic control)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* These classes are toggled by JavaScript */
+.loading-active { position: relative; }
+.loading-active > .skeleton { display: block; }
+.loading-active > .real-content { display: none; }
+.loading-active.loaded > .skeleton { display: none; }
+.loading-active.loaded > .real-content { display: block; }
+
+/* Base main content area - position relative for overlay scoping */
+.main-content-area {
+	position: relative;
+}
+
+/* Page-level loading states */
+.page-loading { overflow: hidden; }
+.page-loading .main-content-area { pointer-events: none; }
+.page-loading .spinner-overlay { display: flex; }
+
+/* Content area loading - dims and adds spinner to content section */
+.main-content-area.content-loading {
+	pointer-events: none;
+}
+
+/* Card-level loading */
+.card.loading .card-spinner { display: flex; }
+.card.loading .card-content { opacity: 0.6; pointer-events: none; }
+
+/* Table-level loading */
+.table-loading .table-row-spinner { display: flex; }
+.table-loading tbody > tr:not(.table-row-spinner) { opacity: 0.4; }
+
+/* Button loading */
+.btn.loading { position: relative; color: transparent; pointer-events: none; }
+.btn.loading::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.btn.loading .spinner { display: inline-flex !important; }

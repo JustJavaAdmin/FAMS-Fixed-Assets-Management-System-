@@ -695,8 +695,44 @@
                 </div>
             </div>
 
+            <!-- SKELETON LOADERS - Shown during initial page load -->
+            <div id="dashboard-skeleton" class="skeleton-dashboard-grid mb-6" aria-hidden="true">
+                <div class="skeleton-dashboard-card">
+                    <div class="skeleton-header">
+                        <div class="skeleton skeleton-square-sm"></div>
+                        <div class="skeleton skeleton-text-sm" style="width: 80px;"></div>
+                    </div>
+                    <div class="skeleton skeleton-title"></div>
+                    <div class="skeleton skeleton-chart" style="height: 120px;"></div>
+                </div>
+                <div class="skeleton-dashboard-card">
+                    <div class="skeleton-header">
+                        <div class="skeleton skeleton-square-sm"></div>
+                        <div class="skeleton skeleton-text-sm" style="width: 80px;"></div>
+                    </div>
+                    <div class="skeleton skeleton-title"></div>
+                    <div class="skeleton skeleton-chart" style="height: 120px;"></div>
+                </div>
+                <div class="skeleton-dashboard-card">
+                    <div class="skeleton-header">
+                        <div class="skeleton skeleton-square-sm"></div>
+                        <div class="skeleton skeleton-text-sm" style="width: 80px;"></div>
+                    </div>
+                    <div class="skeleton skeleton-title"></div>
+                    <div class="skeleton skeleton-chart" style="height: 120px;"></div>
+                </div>
+                <div class="skeleton-dashboard-card">
+                    <div class="skeleton-header">
+                        <div class="skeleton skeleton-square-sm"></div>
+                        <div class="skeleton skeleton-text-sm" style="width: 80px;"></div>
+                    </div>
+                    <div class="skeleton skeleton-title"></div>
+                    <div class="skeleton skeleton-chart" style="height: 120px;"></div>
+                </div>
+            </div>
+
             <!-- Top Metrics Row (Nexus icons + no hover elevation) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div id="metrics-row" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6" style="display: none;">
                 <!-- Metric 1: Total Assets -->
                 <div class="card-nexus p-5">
                     <div class="flex items-center justify-between mb-3">
@@ -1021,6 +1057,42 @@
                 logoutConfirmBtn.innerHTML = '<span class="material-symbols-outlined" style="display:inline-block;animation:spin 1s linear infinite;">hourglass_empty</span>';
                 window.location.href = '/users/logout';
             });
+
+            // ── Dashboard skeleton to content transition ──
+            const dashboardSkeleton = document.getElementById('dashboard-skeleton');
+            const metricsRow = document.getElementById('metrics-row');
+            if (dashboardSkeleton && metricsRow) {
+                // Small delay to ensure smooth transition
+                setTimeout(() => {
+                    dashboardSkeleton.style.opacity = '0';
+                    dashboardSkeleton.style.transition = 'opacity 300ms ease';
+                    setTimeout(() => {
+                        dashboardSkeleton.style.display = 'none';
+                        metricsRow.style.display = 'grid';
+                        metricsRow.style.opacity = '0';
+                        metricsRow.style.transition = 'opacity 300ms ease';
+                        requestAnimationFrame(() => {
+                            metricsRow.style.opacity = '1';
+                        });
+                    }, 300);
+                }, 400);
+            }
+
+            // ── Auto-refresh spinners for dashboard cards ──
+            // These would be triggered by async data refresh functions
+            window.showDashboardCardSpinner = function(cardId) {
+                const card = document.getElementById(cardId);
+                if (card && window.Loading) {
+                    window.Loading.showCardSpinner(card);
+                }
+            };
+
+            window.hideDashboardCardSpinner = function(cardId) {
+                const card = document.getElementById(cardId);
+                if (card && window.Loading) {
+                    window.Loading.hideCardSpinner(card);
+                }
+            };
 
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape' || e.key === 'Esc') {
