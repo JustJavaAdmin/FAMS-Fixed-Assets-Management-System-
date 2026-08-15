@@ -862,18 +862,31 @@
                 </div>
                 <!-- Depreciation Snapshot -->
                 <div class="card-nexus overflow-hidden">
-                    <div class="p-4 border-b border-border-default flex justify-between items-center flex-wrap gap-2">
-                        <h4 class="text-[15px] font-medium text-slate-800">Depreciation Snapshot</h4>
-                        <div class="flex items-center gap-1 text-error text-[12px] font-semibold">
-                            <span class="material-symbols-outlined" style="font-size:14px;">arrow_downward</span>
-                            <span th:text="${depreciationPercentage}">0%</span>
+                    <div class="p-4 border-b border-border-default flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h4 class="text-[15px] font-medium text-slate-800">Depreciation Snapshot</h4>
+                            <span class="text-[11px] font-medium bg-surface-canvas px-2 py-0.5 rounded text-slate-500 uppercase tracking-wider">Year</span>
+                            <span id="selectedDepreciationYearBadge" class="text-[11px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded" th:text="${selectedYear}">2026</span>
+                        </div>
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <label for="depreciationYearSelect" class="text-[11px] font-medium text-slate-500 uppercase tracking-wider">View year</label>
+                            <select id="depreciationYearSelect" class="h-[32px] px-3 bg-surface-canvas border border-border-default rounded-lg text-[12px] text-slate-700 outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                                <option th:each="yr : ${availableDepreciationYears}"
+                                        th:value="${yr}"
+                                        th:text="${yr}"
+                                        th:selected="${yr == selectedYear}">2026</option>
+                            </select>
+                            <div class="flex items-center gap-1 text-error text-[12px] font-semibold">
+                                <span class="material-symbols-outlined" style="font-size:14px;">arrow_downward</span>
+                                <span th:text="${depreciationPercentage}">0%</span>
+                            </div>
                         </div>
                     </div>
                     <div class="p-4">
                         <div th:if="${#lists.isEmpty(depreciationBars)}" class="min-h-56 flex flex-col items-center justify-center text-center border border-dashed border-border-default rounded-xl bg-surface-canvas/60 p-6">
                             <span class="material-symbols-outlined text-slate-400 mb-2" style="font-size:34px;">query_stats</span>
                             <p class="font-medium text-slate-700">No depreciation postings</p>
-                            <p class="text-[13px] text-slate-500 mt-1">Run depreciation to populate the monthly chart.</p>
+                            <p class="text-[13px] text-slate-500 mt-1">Run depreciation for the selected year to populate the chart.</p>
                         </div>
                         <div th:unless="${#lists.isEmpty(depreciationBars)}">
                             <div class="flex justify-between items-end h-32 mb-4 gap-[2px] sm:gap-1">
@@ -1033,5 +1046,22 @@
 </script>
 
 <script th:src="@{/js/input-restrict.js}"></script>
+<script>
+    (function() {
+        const yearSelect = document.getElementById('depreciationYearSelect');
+        if (!yearSelect) return;
+
+        yearSelect.addEventListener('change', function() {
+            const year = this.value;
+            const url = new URL(window.location.href);
+            if (year) {
+                url.searchParams.set('year', year);
+            } else {
+                url.searchParams.delete('year');
+            }
+            window.location.href = url.toString();
+        });
+    })();
+</script>
 </body>
 </html>

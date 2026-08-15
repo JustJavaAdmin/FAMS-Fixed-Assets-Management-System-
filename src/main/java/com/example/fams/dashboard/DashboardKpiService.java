@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 /**
@@ -95,9 +97,10 @@ public class DashboardKpiService {
      * Cached under a single key so all concurrent dashboard hits share one computation
      * per TTL window.
      */
-    @Cacheable(cacheNames = "dashboardKpis", key = "'global'")
+    @Cacheable(cacheNames = "dashboardKpis", key = "'global:' + T(java.lang.Integer).valueOf(#selectedYear == null ? T(java.time.Year).now().getValue() : #selectedYear)")
     @Transactional(readOnly = true)
-    public Map<String, Object> getGlobalDashboard() {
+    public Map<String, Object> getGlobalDashboard(Integer selectedYear) {
+        int year = selectedYear == null ? Year.now().getValue() : selectedYear;
         Map<String, Object> model = new LinkedHashMap<>();
 
         List<Asset> assets = assetRepository.findByStatusNotIgnoreCaseOrderByCreatedAtDesc("Disposed");
@@ -153,6 +156,8 @@ public class DashboardKpiService {
         model.put("resalePercentage", formatPercent(resalePercentage));
         model.put("averageAssetAge", averageAssetAge(assets));
         model.put("periodLabel", "As of " + LocalDate.now().format(DateTimeFormatter.ofPattern("MMM d, yyyy")));
+        model.put("selectedYear", year);
+        model.put("availableDepreciationYears", getAvailableDepreciationYears(year));
         model.put("maintenanceHealth", maintenanceHealth + "%");
         model.put("maintenanceHealthRaw", maintenanceHealth);
         model.put("complianceScore", complianceScore + "%");
@@ -180,7 +185,7 @@ public class DashboardKpiService {
         model.put("activityItems", lifecycleHistoryRepository.findTop8ByOrderByEventAtDesc().stream()
                 .map(this::toActivityItem)
                 .toList());
-        model.put("depreciationBars", buildDepreciationBars());
+        model.put("depreciationBars", buildDepreciationBars(year));
         model.put("assetValueBars", buildAssetValueBars(assets));
         model.put("disposalItems", buildDisposalItems());
         model.put("pendingMaintenanceRequests", formatInteger(maintenanceRecordRepository.countByStatus(MaintenanceStatus.OPEN)));
@@ -252,30 +257,28 @@ public class DashboardKpiService {
         return new ActivityItem(actor, description, when, activityColor(history.getEventType() == null ? "" : history.getEventType().name()));
     }
 
-    private List<DepreciationBar> buildDepreciationBars() {
-        List<DepreciationPosting> postings = depreciationPostingRepository.findByFiscalYearOrderByDepreciationPeriodDescAssetCode(Year.now().getValue());
+    private List<DepreciationBar> buildDepreciationBars(int year) {
+        List<DepreciationPosting> postings = depreciationPostingRepository.findByFiscalYearOrderByDepreciationPeriodDescAssetCode(year);
         if (postings.isEmpty()) {
             return List.of();
         }
         Map<String, BigDecimal> chargesByMonth = new LinkedHashMap<>();
         for (int month = 1; month <= 12; month++) {
-            chargesByMonth.put(LocalDate.of(Year.now().getValue(), month, 1).format(MONTH_LABEL), BigDecimal.ZERO);
+            chargesByMonth.put(LocalDate.of(year, month, 1).format(MONTH_LABEL), BigDecimal.ZERO);
         }
         for (DepreciationPosting posting : postings) {
-            String period = posting.getDepreciationPeriod();
-            if (period == null || period.length() < 7) {
+            LocalDate periodEndDate = posting.getPeriodEndDate();
+            Integer postingYear = posting.getFiscalYear();
+            if (periodEndDate == null) {
                 continue;
             }
-            int month;
-            try {
-                month = Integer.parseInt(period.substring(5, 7));
-            } catch (NumberFormatException ex) {
+            if (postingYear != null && postingYear != year) {
                 continue;
             }
-            if (month < 1 || month > 12) {
+            if (periodEndDate.getYear() != year) {
                 continue;
             }
-            String label = LocalDate.of(Year.now().getValue(), month, 1).format(MONTH_LABEL);
+            String label = periodEndDate.format(MONTH_LABEL);
             chargesByMonth.computeIfPresent(label, (key, value) -> value.add(defaultDecimal(posting.getDepreciationCharge())));
         }
         BigDecimal max = chargesByMonth.values().stream().max(Comparator.naturalOrder()).orElse(BigDecimal.ZERO);
@@ -288,6 +291,19 @@ public class DashboardKpiService {
                     return new DepreciationBar(entry.getKey(), Math.max(height, entry.getValue().signum() == 0 ? 0 : 8), formatCurrency(entry.getValue()));
                 })
                 .toList();
+    }
+
+    private List<Integer> getAvailableDepreciationYears(int selectedYear) {
+        Set<Integer> years = new TreeSet<>(Comparator.reverseOrder());
+        years.add(selectedYear);
+        depreciationPostingRepository.findAll().forEach(posting -> {
+            if (posting.getFiscalYear() != null) {
+                years.add(posting.getFiscalYear());
+            } else if (posting.getPeriodEndDate() != null) {
+                years.add(posting.getPeriodEndDate().getYear());
+            }
+        });
+        return List.copyOf(years);
     }
 
     private List<ChartBar> buildAssetValueBars(List<Asset> assets) {

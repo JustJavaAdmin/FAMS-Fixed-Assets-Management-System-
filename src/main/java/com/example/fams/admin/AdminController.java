@@ -55,8 +55,8 @@ public class AdminController {
 
 
     @GetMapping("/dashboard")
-    public String adminDashboard(Model model) {
-        dashboardModelService.addDashboardModel(model);
+    public String adminDashboard(Model model, @RequestParam(required = false) Integer year) {
+        dashboardModelService.addDashboardModel(model, year);
         return "admin/dashboard";
     }
 

@@ -4,290 +4,941 @@
     <title>Depreciation Management | JustJava FAMS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* ── Responsive overrides ── */
+        :root {
+            --color-primary: #D32F2F;
+            --color-primary-dark: #B71C1C;
+            --color-primary-light: #EF5350;
+            --color-success: #2E7D32;
+            --color-warning: #F57C00;
+            --color-info: #0277BD;
+            --color-error: #C62828;
+            --color-bg-canvas: #FAFAFA;
+            --color-bg-card: #FFFFFF;
+            --color-border: #E0E0E0;
+            --color-text-primary: #212121;
+            --color-text-secondary: #666666;
+            --color-text-tertiary: #999999;
+        }
 
-        /* Page header: stack title + buttons vertically on small screens */
-        .page-header {
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--color-text-primary);
+            background: var(--color-bg-canvas);
+        }
+
+        /* ── RESPONSIVE GRID ── */
+        .section-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .section-header {
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--color-border);
+            margin-bottom: 1rem;
+        }
+
+        .section-header h2 {
+            font-size: 28px;
+            line-height: 36px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin: 0 0 0.25rem 0;
+        }
+
+        .section-header p {
+            font-size: 13px;
+            line-height: 18px;
+            color: var(--color-text-secondary);
+            margin: 0;
+        }
+
+        /* ── CARD STYLING ── */
+        .card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--color-border);
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .page-header__title { min-width: 0; flex: 1 1 200px; }
-
-        .page-header__actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            flex: 0 0 auto;
-        }
-
-        @media (max-width: 639px) {
-            .page-header { align-items: stretch; }
-            .page-header__actions {
-                width: 100%;
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-            }
-            .page-header__actions a,
-            .page-header__actions button {
-                justify-content: center;
-            }
-        }
-
-        /* Hero card: side image hidden on mobile, shown from md */
-        .hero-card__image-panel {
-            display: none;
-        }
-        @media (min-width: 768px) {
-            .hero-card__image-panel {
-                display: flex;
-            }
-        }
-
-        /* Filters bar: stack label + select vertically on xs, row from sm */
-        .filters-bar {
-            display: flex;
-            flex-wrap: wrap;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .card-header h3 {
+            font-size: 18px;
+            line-height: 24px;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin: 0;
+        }
+
+        .card-content {
+            padding: 1.25rem;
+        }
+
+        /* ── TOP OVERVIEW SECTION ── */
+        .overview-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        /* ── KPI GRID ── */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+
+        .kpi-card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            line-height: 16px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            line-height: 36px;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin-bottom: 0.5rem;
+            word-break: break-word;
+        }
+
+        .kpi-meta {
+            font-size: 12px;
+            line-height: 16px;
+            color: var(--color-text-tertiary);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .kpi-meta.positive {
+            color: var(--color-success);
+        }
+
+        .kpi-meta.warning {
+            color: var(--color-warning);
+        }
+
+        /* ── PERIOD REVIEW SECTION ── */
+        .period-section {
+            background: linear-gradient(135deg, #FFF3E0 0%, #FFFFFF 100%);
+            border: 1px solid #FFE0B2;
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .period-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .period-info h3 {
+            font-size: 18px;
+            line-height: 24px;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .period-info p {
+            font-size: 13px;
+            line-height: 18px;
+            color: var(--color-text-secondary);
+            margin: 0;
+        }
+
+        .period-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--color-bg-card);
+            border-radius: 6px;
+            font-size: 11px;
+            line-height: 14px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+        }
+
+        .period-badge.draft {
+            background: #FFF3E0;
+            color: var(--color-warning);
+            border: 1px solid #FFE0B2;
+        }
+
+        .period-badge.approved {
+            background: #E8F5E9;
+            color: var(--color-success);
+            border: 1px solid #C8E6C9;
+        }
+
+        .period-badge.posted {
+            background: #E3F2FD;
+            color: var(--color-info);
+            border: 1px solid #BBDEFB;
+        }
+
+        /* ── STATUS COUNTERS ── */
+        .status-counters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: var(--color-bg-card);
+            border-radius: 6px;
+            border: 1px solid var(--color-border);
+        }
+
+        .counter {
+            text-align: center;
+        }
+
+        .counter-label {
+            font-size: 12px;
+            line-height: 16px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .counter-value {
+            font-size: 28px;
+            line-height: 36px;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+
+        /* ── ACTION BUTTONS GRID ── */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            line-height: 18px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--color-primary-dark);
+            box-shadow: 0 2px 8px rgba(211, 47, 47, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-canvas);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #F5F5F5;
+        }
+
+        .btn-success {
+            background: var(--color-success);
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #1B5E20;
+        }
+
+        .btn-info {
+            background: var(--color-info);
+            color: white;
+        }
+
+        .btn-info:hover:not(:disabled) {
+            background: #01579B;
+        }
+
+        .btn-error {
+            background: var(--color-error);
+            color: white;
+        }
+
+        .btn-error:hover:not(:disabled) {
+            background: #AD1457;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ── FILTERS SECTION ── */
+        .filters-section {
+            background: var(--color-bg-canvas);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
         }
 
         .filter-group {
             display: flex;
             flex-direction: column;
-            gap: 0.25rem;
-            flex: 1 1 140px;
-            min-width: 120px;
+            gap: 0.5rem;
         }
 
-        @media (max-width: 479px) {
-            .filter-group {
-                flex: 1 1 100%;
-            }
-            .filters-bar .filter-actions {
-                width: 100%;
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-            }
-            .filters-bar .filter-actions button {
-                justify-content: center;
-            }
+        .filter-label {
+            font-size: 12px;
+            line-height: 16px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .filter-group label {
-            display: block;
+        .filter-input {
+            padding: 0.625rem 0.75rem;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            background: var(--color-bg-card);
+            color: var(--color-text-primary);
+            font-size: 13px;
+            line-height: 18px;
+            transition: all 0.2s ease;
         }
 
-        .filter-group select {
-            width: 100%;
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.1);
         }
 
-        /* Table: horizontal scroll with sticky first column on very narrow screens */
-        .table-scroll-wrapper {
+        .filters-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        /* ── DATA TABLE ── */
+        .table-wrapper {
             overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
         }
 
-        .table-scroll-wrapper table {
-            min-width: 840px;
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--color-bg-card);
         }
 
-        @media (max-width: 639px) {
-            .dep-table td:nth-child(3),
-            .dep-table th:nth-child(3) {
-                display: none; /* hide Category column on xs */
-            }
+        .data-table thead {
+            background: var(--color-bg-canvas);
+            border-bottom: 2px solid var(--color-border);
         }
 
-        /* KPI grid — ensure text doesn't overflow on very narrow cards */
-        .kpi-value {
-            word-break: break-all;
-            font-size: clamp(1.25rem, 4vw, 1.75rem) !important;
+        .data-table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 500;
+            font-size: 12px;
+            line-height: 16px;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
         }
 
-        /* Main content grid: full-width below lg */
-        .main-grid {
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+            font-size: 13px;
+            line-height: 18px;
+        }
+
+        .data-table tbody tr:hover {
+            background: #FAFAFA;
+            cursor: pointer;
+        }
+
+        .data-table tbody tr.selected {
+            border-left: 3px solid var(--color-primary);
+            background: #FFF3E0;
+        }
+
+        .accent-text {
+            color: var(--color-primary);
+            font-weight: 600;
+        }
+
+        .secondary-text {
+            color: var(--color-text-secondary);
+        }
+
+        /* ── BADGE STYLES ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-method {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .badge-method.rb {
+            background: var(--color-warning);
+            color: white;
+        }
+
+        .badge-method.ddb {
+            background: var(--color-info);
+            color: white;
+        }
+
+        .badge-status {
+            background: var(--color-bg-canvas);
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+        }
+
+        .badge-status.draft {
+            background: #FFF3E0;
+            color: var(--color-warning);
+            border-color: #FFE0B2;
+        }
+
+        .badge-status.approved {
+            background: #E8F5E9;
+            color: var(--color-success);
+            border-color: #C8E6C9;
+        }
+
+        .badge-status.posted {
+            background: #E3F2FD;
+            color: var(--color-info);
+            border-color: #BBDEFB;
+        }
+
+        /* ── SUMMARY GRID (below the table) ── */
+        .summary-grid {
             display: grid;
-            gap: 1.5rem;
             grid-template-columns: 1fr;
+            gap: 2rem;
         }
 
         @media (min-width: 1024px) {
-            .main-grid {
-                grid-template-columns: 8fr 4fr;
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
 
-        /* Sidebar cards: side-by-side on md screens (below lg) */
-        @media (min-width: 768px) and (max-width: 1023px) {
-            .sidebar-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 1.5rem;
-            }
+        /* ── EMPTY & LOADING STATES ── */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--color-text-secondary);
         }
 
-        /* Animations */
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        .empty-state-icon {
+            font-size: 3.5rem;
+            opacity: 0.3;
+            margin-bottom: 1rem;
         }
-        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+        .empty-state h4 {
+            font-size: 18px;
+            line-height: 24px;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin: 1rem 0 0.5rem 0;
+        }
+
+        .empty-state p {
+            margin: 0 0 1.5rem 0;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+            color: var(--color-text-secondary);
+            gap: 1rem;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--color-border);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        .animate-spin { animation: spin 1s linear infinite; }
 
-        /* Touch-friendly tap targets */
-        @media (max-width: 767px) {
-            .dep-table tbody tr td {
-                padding-top: 0.875rem;
-                padding-bottom: 0.875rem;
+        /* ── ANIMATIONS ── */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
             }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-slideIn {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 768px) {
+            .section-container {
+                gap: 1.5rem;
+            }
+
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+
+            .kpi-card {
+                padding: 1rem;
+            }
+
+            .kpi-value {
+                font-size: 1.5rem;
+            }
+
+            .period-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .action-buttons {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .status-counters {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 0.75rem;
+                font-size: 0.875rem;
+            }
+        }
+
+        /* ── PAGE HEADER ── */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .page-title h1 {
+            font-size: 28px;
+            line-height: 36px;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .page-title p {
+            font-size: 13px;
+            line-height: 18px;
+            color: var(--color-text-secondary);
+            margin: 0;
+        }
+
+        .page-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .page-actions .btn {
+            font-size: 13px;
+            line-height: 18px;
+            padding: 0.625rem 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+            }
+
+            .page-actions {
+                width: 100%;
+            }
+
+            .page-actions .btn {
+                flex: 1;
+            }
+
+            .page-title h1 {
+                font-size: 28px;
+            }
+        }
+
+        /* ── MODAL ── */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--color-bg-card);
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            line-height: 24px;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin: 0;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-body p,
+        .modal-body div {
+            font-size: 13px;
+            line-height: 18px;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        /* ── ALERTS ── */
+        .alert-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 60;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-width: 400px;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 18px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .alert-success {
+            background: #E8F5E9;
+            color: var(--color-success);
+            border: 1px solid #C8E6C9;
+        }
+
+        .alert-error {
+            background: #FFEBEE;
+            color: var(--color-error);
+            border: 1px solid #FFCDD2;
+        }
+
+        .alert-info {
+            background: #E3F2FD;
+            color: var(--color-info);
+            border: 1px solid #BBDEFB;
+        }
+
+        .icon-small {
+            flex-shrink: 0;
+            font-size: 1.25rem;
         }
     </style>
 </head>
 <body>
-<main id="main-content" class="space-y-6" layout:fragment="content">
+<main id="main-content" class="section-container" layout:fragment="content">
 
-    <!-- ── Page Header ── -->
+    <!-- ── PAGE HEADER ── -->
     <div class="page-header">
-        <div class="page-header__title">
-            <h2 class="font-page-title text-page-title text-on-background">Depreciation Management</h2>
-            <p class="text-body-default text-secondary">Track the reducing value of your fixed assets over time across your entire portfolio.</p>
+        <div class="page-title">
+            <h1 class="font-page-title text-page-title text-on-background">Depreciation Management</h1>
+            <p class="text-body-default text-secondary">Track and manage the reducing value of fixed assets over time</p>
         </div>
-        <div class="page-header__actions">
-            <a href="/depreciation/configure"
-               class="h-[38px] px-4 bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all flex items-center gap-2">
-                <span class="material-symbols-outlined text-[18px]">tune</span>
+        <div class="page-actions">
+            <a href="/depreciation/configure" class="btn btn-primary font-body-medium">
+                <span class="material-symbols-outlined">tune</span>
                 Configure
             </a>
-            <a href="/depreciation/run"
-               class="h-[38px] px-4 bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all flex items-center gap-2">
-                <span class="material-symbols-outlined text-[18px]">play_circle</span>
+            <a href="/depreciation/run" class="btn btn-primary font-body-medium">
+                <span class="material-symbols-outlined">play_circle</span>
                 Run Depreciation
             </a>
-            <a href="/depreciation/history"
-               class="h-[38px] px-4 bg-surface-card border border-border-default text-on-surface rounded-lg font-body-medium hover:bg-surface-canvas transition-all flex items-center gap-2">
-                <span class="material-symbols-outlined text-[18px]">history</span>
+            <a href="/depreciation/history" class="btn btn-secondary font-body-medium">
+                <span class="material-symbols-outlined">history</span>
                 History
             </a>
-            <a href="/depreciation/accounting-journals"
-               class="h-[38px] px-4 bg-surface-card border border-border-default text-on-surface rounded-lg font-body-medium hover:bg-surface-canvas transition-all flex items-center gap-2">
-                <span class="material-symbols-outlined text-[18px]">receipt_long</span>
-                Accounting Journals
-            </a>
-            <button id="exportBtn" class="h-[38px] px-4 bg-surface-card border border-border-default text-on-surface rounded-lg font-body-medium hover:bg-surface-canvas transition-all flex items-center gap-2">
-                <span class="material-symbols-outlined text-[18px]">download</span>
-                Export
+        </div>
+    </div>
+
+    <!-- ── OVERVIEW SECTION ── -->
+    <div class="overview-section">
+        <!-- KPI Cards -->
+        <div>
+            <div class="section-header">
+                <h2 class="font-section-header text-section-header text-on-surface">Portfolio Overview</h2>
+                <p id="lastCalcDisplay" class="text-body-default text-secondary">Last calculated: --</p>
+            </div>
+            <div class="kpi-grid" id="kpiContent">
+                <div class="kpi-card">
+                    <div class="kpi-label">
+                        <span class="text-label-small text-secondary uppercase tracking-wider">Total Original Cost</span>
+                        <span class="material-symbols-outlined" style="font-size: 1.25rem; color: var(--color-text-secondary);">account_balance_wallet</span>
+                    </div>
+                    <div class="kpi-value font-page-title font-bold text-on-surface" id="kpiTotalCost">₦0.00</div>
+                    <div class="kpi-meta text-label-small text-secondary" id="kpiCostTrend">Portfolio value</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-label">
+                        <span class="text-label-small text-secondary uppercase tracking-wider">Total Book Value</span>
+                        <span class="material-symbols-outlined" style="font-size: 1.25rem; color: var(--color-text-secondary);">menu_book</span>
+                    </div>
+                    <div class="kpi-value font-page-title font-bold text-on-surface" id="kpiBookValue">₦0.00</div>
+                    <div class="kpi-meta positive text-label-small" id="kpiRecoveryPotential">-- recovery potential</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-label">
+                        <span class="text-label-small text-secondary uppercase tracking-wider">Accumulated Depreciation</span>
+                        <span class="material-symbols-outlined" style="font-size: 1.25rem; color: var(--color-text-secondary);">trending_down</span>
+                    </div>
+                    <div class="kpi-value font-page-title font-bold text-primary" id="kpiAccumulatedDep">₦0.00</div>
+                    <div class="kpi-meta warning text-label-small" id="kpiDepPercentage">-- of total cost</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-label">
+                        <span class="text-label-small text-secondary uppercase tracking-wider">Fully Depreciated Assets</span>
+                        <span class="material-symbols-outlined" style="font-size: 1.25rem; color: var(--color-text-secondary);">done_all</span>
+                    </div>
+                    <div class="kpi-value font-page-title font-bold text-on-surface" id="kpiFullyDepreciated">0</div>
+                    <div class="kpi-meta text-label-small text-secondary" id="kpiAssetCount">of 0 assets configured</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── PERIOD REVIEW & ACTIONS SECTION ── -->
+    <div class="period-section">
+        <div class="period-header">
+            <div class="period-info">
+                <h3 class="font-section-header text-section-header text-on-surface">Period Review & Approval</h3>
+                <p id="periodReviewSummary" class="text-body-default text-secondary">Select a depreciation period to review and manage records</p>
+                <div style="margin-top: 0.75rem;">
+                    <span id="periodStatusBadge" class="period-badge">No period selected</span>
+                </div>
+            </div>
+            <div style="text-align: right; min-width: 200px;">
+                <div class="filter-group">
+                    <label class="filter-label">Depreciation Period</label>
+                    <select id="periodFilter" class="filter-input">
+                        <option value="">Latest Period</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Counters -->
+        <div class="status-counters">
+            <div class="counter">
+                <div class="counter-label">Draft</div>
+                <div class="counter-value" id="periodDraftCount">0</div>
+            </div>
+            <div class="counter">
+                <div class="counter-label">Approved</div>
+                <div class="counter-value" id="periodApprovedCount">0</div>
+            </div>
+            <div class="counter">
+                <div class="counter-label">Posted</div>
+                <div class="counter-value" id="periodPostedCount">0</div>
+            </div>
+            <div class="counter">
+                <div class="counter-label">Locked</div>
+                <div class="counter-value" id="periodLockedCount">0</div>
+            </div>
+            <div class="counter">
+                <div class="counter-label">Reversed</div>
+                <div class="counter-value" id="periodReversedCount">0</div>
+            </div>
+            <div class="counter">
+                <div class="counter-label">Total</div>
+                <div class="counter-value" id="periodTotalCount">0</div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button id="approvePeriodBtn" disabled class="btn btn-primary">
+                <span class="material-symbols-outlined">verified</span>
+                Approve Period
+            </button>
+            <button id="postLedgerBtn" disabled class="btn btn-info">
+                <span class="material-symbols-outlined">account_balance</span>
+                Post to Ledger
+            </button>
+            <button id="lockPeriodBtn" disabled class="btn btn-secondary">
+                <span class="material-symbols-outlined">lock</span>
+                Lock Period
+            </button>
+            <button id="reversePeriodBtn" disabled class="btn btn-error">
+                <span class="material-symbols-outlined">undo</span>
+                Reverse Period
             </button>
         </div>
     </div>
 
-    <!-- Alert container for filter/export feedback -->
-    <div id="alertContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+    <!-- ── FILTERS SECTION ── -->
+    <div class="filters-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+            <h3 class="font-section-header text-section-header text-on-surface" style="margin: 0;">Filter Results</h3>
+            <span id="tableShowingText" class="text-body-default text-secondary">--</span>
+        </div>
 
-    <!-- ── Hero Info Card ── -->
-    <div class="bg-surface-card border border-border-default rounded-xl card-shadow overflow-hidden flex">
-        <div class="flex-1 p-5 sm:p-6">
-            <div class="flex flex-wrap items-center gap-3 mb-4">
-                <div class="flex items-center gap-1 text-status-success text-label-small font-medium">
-                    <span class="material-symbols-outlined text-[16px]">check_circle</span>
-                    <span>Audit Compliant</span>
-                </div>
-                <div id="lastCalcDisplay" class="flex items-center gap-1 text-status-info text-label-small font-medium">
-                    <span class="material-symbols-outlined text-[16px]">update</span>
-                    <span>Last calculated: --</span>
-                </div>
-            </div>
-            <p class="text-body-default text-secondary">Monitor accumulated depreciation, book values, and tax implications across your entire portfolio.</p>
-        </div>
-        <!-- Hidden on mobile to save space -->
-        <div class="hero-card__image-panel w-48 bg-primary/5 items-center justify-center p-4 flex-shrink-0">
-            <img alt="Depreciation illustration" class="max-h-24 object-contain"
-                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7HiFJm0FgP-CXMNQjJ7SN5juACLSJymzMgZIdQFrcGfF8HZLIFL_p1uOiV0xTaGve9nQ-y7kZFjNgZSbWDqxkU28EpME6EbmymbRs9HrjgL-QoPokK9BV0hyhEhzpHXssDhQe3s1iOUb_1QHD2wvBsJuMwaxNFxTEBRRwH245p9qkwWiK0Mu5N1UA2Nbnev4jQxxSb-dpiB-rK-cgqXQlC41uKx1QHYf6O8L6a6_ltyQ-jMmR7eFl">
-        </div>
-    </div>
-
-    <!-- ── KPI Strip — Loading State ── -->
-    <div id="kpiLoadingState" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-surface-card p-5 rounded-xl card-shadow border border-border-default animate-pulse">
-            <div class="h-4 bg-surface-canvas rounded w-3/4 mb-3"></div>
-            <div class="h-8 bg-surface-canvas rounded w-1/2 mb-2"></div>
-            <div class="h-3 bg-surface-canvas rounded w-1/3"></div>
-        </div>
-        <div class="bg-surface-card p-5 rounded-xl card-shadow border border-border-default animate-pulse">
-            <div class="h-4 bg-surface-canvas rounded w-3/4 mb-3"></div>
-            <div class="h-8 bg-surface-canvas rounded w-1/2 mb-2"></div>
-            <div class="h-3 bg-surface-canvas rounded w-1/3"></div>
-        </div>
-        <div class="bg-surface-card p-5 rounded-xl card-shadow border border-border-default animate-pulse">
-            <div class="h-4 bg-surface-canvas rounded w-3/4 mb-3"></div>
-            <div class="h-8 bg-surface-canvas rounded w-1/2 mb-2"></div>
-            <div class="h-3 bg-surface-canvas rounded w-1/3"></div>
-        </div>
-        <div class="bg-surface-card p-5 rounded-xl card-shadow border border-border-default animate-pulse">
-            <div class="h-4 bg-surface-canvas rounded w-3/4 mb-3"></div>
-            <div class="h-8 bg-surface-canvas rounded w-1/2 mb-2"></div>
-            <div class="h-3 bg-surface-canvas rounded w-1/3"></div>
-        </div>
-    </div>
-
-    <!-- ── KPI Strip — Dynamic Content ── -->
-    <div id="kpiContent" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-surface-card p-5 rounded-xl card-shadow border border-border-default">
-            <div class="flex justify-between items-start mb-3">
-                <span class="text-label-small text-secondary uppercase tracking-wider">Total Original Cost</span>
-                <span class="material-symbols-outlined text-secondary flex-shrink-0">account_balance_wallet</span>
-            </div>
-            <p id="kpiTotalCost" class="kpi-value font-page-title font-bold text-on-surface">₦0.00</p>
-            <div class="mt-2 text-label-small text-secondary" id="kpiCostTrend">--</div>
-        </div>
-        <div class="bg-surface-card p-5 rounded-xl card-shadow border border-border-default">
-            <div class="flex justify-between items-start mb-3">
-                <span class="text-label-small text-secondary uppercase tracking-wider">Total Book Value</span>
-                <span class="material-symbols-outlined text-secondary flex-shrink-0">menu_book</span>
-            </div>
-            <p id="kpiBookValue" class="kpi-value font-page-title font-bold text-on-surface">₦0.00</p>
-            <div class="mt-2 text-label-small text-secondary" id="kpiRecoveryPotential">--</div>
-        </div>
-        <div class="bg-surface-card p-5 rounded-xl card-shadow border border-border-default">
-            <div class="flex justify-between items-start mb-3">
-                <span class="text-label-small text-secondary uppercase tracking-wider">Accumulated Depreciation</span>
-                <span class="material-symbols-outlined text-secondary flex-shrink-0">trending_down</span>
-            </div>
-            <p id="kpiAccumulatedDep" class="kpi-value font-page-title font-bold text-primary">₦0.00</p>
-            <div class="mt-2 text-badge-label text-status-warning flex items-center gap-1" id="kpiDepPercentage">
-                <span class="material-symbols-outlined text-[16px]">history</span>
-                <span>--</span>
-            </div>
-        </div>
-        <div class="bg-surface-card p-5 rounded-xl card-shadow border border-border-default">
-            <div class="flex justify-between items-start mb-3">
-                <span class="text-label-small text-secondary uppercase tracking-wider">Fully Depreciated Assets</span>
-                <span class="material-symbols-outlined text-secondary flex-shrink-0">done_all</span>
-            </div>
-            <p id="kpiFullyDepreciated" class="kpi-value font-page-title font-bold text-on-surface">0</p>
-            <div class="mt-2 text-label-small text-secondary" id="kpiAssetCount">of 0 assets</div>
-        </div>
-    </div>
-
-    <!-- ── Filters Bar ── -->
-    <div class="bg-surface-card border border-border-default rounded-xl p-4">
-        <div class="filters-bar">
+        <div class="filters-grid">
             <div class="filter-group">
-                <label class="text-label-small text-secondary">Period</label>
-                <select id="periodFilter" class="h-[38px] px-3 bg-surface-canvas border border-border-default rounded-lg text-body-default text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
-                    <option value="">Latest Period</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label class="text-label-small text-secondary">Category</label>
-                <select id="categoryFilter" class="h-[38px] px-3 bg-surface-canvas border border-border-default rounded-lg text-body-default text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                <label class="filter-label">Category</label>
+                <select id="categoryFilter" class="filter-input">
                     <option>All Categories</option>
                     <option>IT Equipment</option>
                     <option>Vehicles</option>
@@ -295,17 +946,17 @@
                 </select>
             </div>
             <div class="filter-group">
-                <label class="text-label-small text-secondary">Department</label>
-                <select id="departmentFilter" class="h-[38px] px-3 bg-surface-canvas border border-border-default rounded-lg text-body-default text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                <label class="filter-label">Department</label>
+                <select id="departmentFilter" class="filter-input">
                     <option>All Departments</option>
                     <option>Engineering</option>
-                    <option>Sales &amp; Marketing</option>
+                    <option>Sales & Marketing</option>
                     <option>Operations</option>
                 </select>
             </div>
             <div class="filter-group">
-                <label class="text-label-small text-secondary">Method</label>
-                <select id="methodFilter" class="h-[38px] px-3 bg-surface-canvas border border-border-default rounded-lg text-body-default text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                <label class="filter-label">Method</label>
+                <select id="methodFilter" class="filter-input">
                     <option>All Methods</option>
                     <option>Straight-Line (SL)</option>
                     <option>Reducing Balance (RB)</option>
@@ -313,236 +964,161 @@
                 </select>
             </div>
             <div class="filter-group">
-                <label class="text-label-small text-secondary">Year Range</label>
-                <select id="yearFilter" class="h-[38px] px-3 bg-surface-canvas border border-border-default rounded-lg text-body-default text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+                <label class="filter-label">Year Range</label>
+                <select id="yearFilter" class="filter-input">
                     <option value="">All Years</option>
                 </select>
             </div>
-            <div class="filter-actions flex gap-2 flex-shrink-0">
-                <button id="moreFiltersBtn" class="h-[38px] px-4 bg-surface-card border border-border-default text-on-surface rounded-lg font-body-medium hover:bg-surface-canvas transition-all flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[18px]">filter_alt</span>
-                    <span class="hidden sm:inline">More Filters</span>
-                </button>
-                <button id="exportBtn2" class="h-[38px] px-4 bg-surface-card border border-border-default text-on-surface rounded-lg font-body-medium hover:bg-surface-canvas transition-all flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[18px]">download</span>
-                    <span class="hidden sm:inline">Export</span>
-                </button>
-            </div>
+        </div>
+
+        <div class="filters-actions">
+            <button id="exportBtn" class="btn btn-secondary" style="flex: 0 0 auto;">
+                <span class="material-symbols-outlined">download</span>
+                <span class="hidden sm:inline">Export CSV</span>
+            </button>
+            <a href="/depreciation/accounting-journals" class="btn btn-secondary" style="flex: 0 0 auto;">
+                <span class="material-symbols-outlined">receipt_long</span>
+                <span class="hidden sm:inline">View Journals</span>
+            </a>
         </div>
     </div>
 
-    <!-- ── Main Data Grid ── -->
-    <div id="approvalPanel" class="bg-surface-card border border-border-default rounded-xl p-4 sm:p-5">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div class="space-y-1">
-                <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="font-section-header text-section-header text-on-surface">Period Review</h3>
-                    <span id="periodStatusBadge" class="px-2 py-0.5 rounded-full bg-surface-canvas text-secondary text-badge-label whitespace-nowrap">No period selected</span>
-                </div>
-                <p id="periodReviewSummary" class="text-body-default text-secondary">Run depreciation to create draft records for review.</p>
-            </div>
-            <div class="flex flex-col gap-3">
-                <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 text-center">
-                    <div class="bg-surface-canvas rounded-lg px-3 py-2">
-                        <p class="text-label-small text-secondary">Draft</p>
-                        <p id="periodDraftCount" class="font-technical-data text-on-surface">0</p>
-                    </div>
-                    <div class="bg-surface-canvas rounded-lg px-3 py-2">
-                        <p class="text-label-small text-secondary">Approved</p>
-                        <p id="periodApprovedCount" class="font-technical-data text-on-surface">0</p>
-                    </div>
-                    <div class="bg-surface-canvas rounded-lg px-3 py-2">
-                        <p class="text-label-small text-secondary">Posted</p>
-                        <p id="periodPostedCount" class="font-technical-data text-on-surface">0</p>
-                    </div>
-                    <div class="bg-surface-canvas rounded-lg px-3 py-2">
-                        <p class="text-label-small text-secondary">Locked</p>
-                        <p id="periodLockedCount" class="font-technical-data text-on-surface">0</p>
-                    </div>
-                    <div class="bg-surface-canvas rounded-lg px-3 py-2">
-                        <p class="text-label-small text-secondary">Reversed</p>
-                        <p id="periodReversedCount" class="font-technical-data text-on-surface">0</p>
-                    </div>
-                    <div class="bg-surface-canvas rounded-lg px-3 py-2">
-                        <p class="text-label-small text-secondary">Total</p>
-                        <p id="periodTotalCount" class="font-technical-data text-on-surface">0</p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                    <button id="approvePeriodBtn" disabled
-                            class="h-[38px] px-4 bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span class="material-symbols-outlined text-[18px]">verified</span>
-                        Approve Period
-                    </button>
-                    <button id="postLedgerBtn" disabled
-                            class="h-[38px] px-4 bg-status-info text-white rounded-lg font-body-medium hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span class="material-symbols-outlined text-[18px]">account_balance</span>
-                        Post to Ledger
-                    </button>
-                    <button id="lockPeriodBtn" disabled
-                            class="h-[38px] px-4 bg-on-surface text-surface-card rounded-lg font-body-medium hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span class="material-symbols-outlined text-[18px]">lock</span>
-                        Lock Period
-                    </button>
-                    <button id="reversePeriodBtn" disabled
-                            class="h-[38px] px-4 bg-error text-white rounded-lg font-body-medium hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span class="material-symbols-outlined text-[18px]">undo</span>
-                        Reverse Period
-                    </button>
-                </div>
-            </div>
+    <!-- ── DATA SECTION ── -->
+    <!-- Full-width Asset Depreciation Schedule -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="font-section-header text-section-header text-on-surface">Asset Depreciation Schedule</h3>
+            <span id="tableShowingText2" class="text-body-default text-secondary">--</span>
         </div>
-    </div>
-
-    <!-- Main Data Grid -->
-    <div class="main-grid">
-
-        <!-- Left: Depreciation Table (8 cols on lg+) -->
-        <div class="bg-surface-card rounded-xl card-shadow border border-border-default overflow-hidden">
-            <div class="p-4 sm:p-5 border-b border-border-default flex justify-between items-center flex-wrap gap-3">
-                <h3 class="font-section-header text-section-header text-on-surface">Asset Depreciation Schedule</h3>
-                <div class="flex items-center gap-2">
-                    <span id="tableShowingText" class="text-label-small text-secondary">--</span>
-                </div>
-            </div>
-
+        <div class="card-content">
             <!-- Loading State -->
-            <div id="tableLoadingState" class="p-8 flex justify-center">
-                <div class="flex flex-col items-center gap-3">
-                    <div class="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
-                    <p class="text-body-default text-secondary">Loading depreciation data...</p>
-                </div>
+            <div id="tableLoadingState" class="loading-spinner">
+                <div class="spinner"></div>
+                <span>Loading depreciation data...</span>
             </div>
 
             <!-- Empty State -->
-            <div id="tableEmptyState" class="hidden p-8 sm:p-12 flex flex-col items-center text-center">
-                <span class="material-symbols-outlined text-[64px] text-secondary opacity-30 mb-4">inventory_2</span>
-                <h4 class="font-section-header text-section-header text-on-surface mb-2">No Assets Configured</h4>
-                <p class="text-body-default text-secondary max-w-sm mb-6">
-                    No assets have been configured for depreciation yet. Start by configuring depreciation parameters for your assets.
-                </p>
-                <a href="/depreciation/configure"
-                   class="h-[36px] px-4 bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[18px]">tune</span>
+            <div id="tableEmptyState" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">📋</div>
+                <h4>No Assets Configured</h4>
+                <p>No assets have been configured for depreciation yet. Start by configuring depreciation parameters.</p>
+                <a href="/depreciation/configure" class="btn btn-primary">
+                    <span class="material-symbols-outlined">tune</span>
                     Configure First Asset
                 </a>
             </div>
 
-            <!-- Table with horizontal scroll -->
-            <div id="tableContent" class="hidden table-scroll-wrapper">
-                <table class="dep-table w-full text-left border-collapse">
-                    <thead>
-                    <tr class="bg-surface-canvas border-b border-border-default">
-                        <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Asset Code</th>
-                        <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Name</th>
-                        <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Category</th>
-                        <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Method</th>
-                        <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Depreciation Charge</th>
-                        <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Cost</th>
-                        <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Accum. Dep.</th>
-                        <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider whitespace-nowrap">Book Value</th>
-                        <th class="px-4 sm:px-5 py-3 text-label-small font-label-small text-secondary uppercase tracking-wider text-right whitespace-nowrap">Status</th>
-                    </tr>
-                    </thead>
-                    <tbody id="tableBody" class="divide-y divide-border-default">
-                    <!-- Dynamically populated -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Right: Charts & Analysis (4 cols on lg+) -->
-        <div class="sidebar-grid space-y-6 lg:space-y-6">
-
-            <!-- Depreciation Summary Card -->
-            <div class="bg-surface-card rounded-xl card-shadow border border-border-default overflow-hidden">
-                <div class="p-5 border-b border-border-default flex justify-between items-center">
-                    <h3 class="font-card-header text-card-header text-on-surface">Portfolio Summary</h3>
-                    <span class="material-symbols-outlined text-secondary flex-shrink-0">summarize</span>
-                </div>
-
-                <!-- Loading -->
-                <div id="chartLoadingState" class="p-8 flex justify-center">
-                    <div class="flex flex-col items-center gap-3">
-                        <div class="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
-                        <p class="text-label-small text-secondary">Processing data...</p>
-                    </div>
-                </div>
-
-                <!-- Content -->
-                <div id="chartContent" class="hidden p-5 space-y-4">
-                    <div>
-                        <div class="flex justify-between mb-2">
-                            <span class="text-label-small text-secondary">Total Assets</span>
-                            <span id="chartTotalAssets" class="font-body-medium text-on-surface">0</span>
-                        </div>
-                    </div>
-                    <div class="border-t border-border-default pt-4">
-                        <div class="flex justify-between mb-2">
-                            <span class="text-label-small text-secondary">Fully Depreciated</span>
-                            <span id="chartFullyDepreciated" class="font-body-medium text-on-surface">0</span>
-                        </div>
-                        <div class="w-full bg-surface-canvas rounded h-2">
-                            <div id="chartDeprecationProgress" class="bg-primary rounded h-2 transition-all" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    <div class="border-t border-border-default pt-4">
-                        <div class="flex justify-between mb-2">
-                            <span class="text-label-small text-secondary">Depreciation Rate</span>
-                            <span id="chartDepRate" class="font-body-medium text-on-surface">0%</span>
-                        </div>
-                        <div class="w-full bg-surface-canvas rounded h-2">
-                            <div id="chartDepRateBar" class="bg-status-warning rounded h-2 transition-all" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Method Distribution Card -->
-            <div class="bg-surface-card rounded-xl card-shadow border border-border-default overflow-hidden">
-                <div class="p-5 border-b border-border-default flex justify-between items-center">
-                    <h3 class="font-card-header text-card-header text-on-surface">Methods Used</h3>
-                    <span class="text-label-small bg-surface-canvas px-2 py-0.5 rounded text-secondary flex-shrink-0">Distribution</span>
-                </div>
-
-                <!-- Loading -->
-                <div id="methodLoadingState" class="p-8 flex justify-center">
-                    <div class="flex flex-col items-center gap-3">
-                        <div class="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
-                    </div>
-                </div>
-
-                <!-- Content -->
-                <div id="methodContent" class="hidden p-5 space-y-4">
-                    <div id="methodsList" class="space-y-3">
-                        <!-- Populated dynamically -->
-                    </div>
-                </div>
-            </div>
-
-        </div><!-- /sidebar-grid -->
-    </div><!-- /main-grid -->
-
-    <div id="periodActionModal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-surface-card rounded-xl shadow-lg max-w-md w-full border border-border-default">
-            <div class="p-5 border-b border-border-default flex items-center gap-3">
-                <span id="periodActionIcon" class="material-symbols-outlined text-primary">verified</span>
-                <h3 id="periodActionTitle" class="font-section-header text-section-header text-on-surface">Approve Depreciation Period</h3>
-            </div>
-            <div class="p-5 space-y-4">
-                <p id="periodActionText" class="text-body-default text-secondary">Approve the selected draft depreciation records?</p>
-                <div id="periodActionResult" class="hidden bg-surface-canvas rounded-lg p-3 text-label-small text-secondary"></div>
-                <div class="flex gap-2 justify-end">
-                    <button id="cancelPeriodActionBtn" class="h-[38px] px-4 bg-surface-card border border-border-default text-on-surface rounded-lg font-body-medium hover:bg-surface-canvas transition-all">Cancel</button>
-                    <button id="confirmPeriodActionBtn" class="h-[38px] px-4 bg-primary text-on-primary rounded-lg font-body-medium hover:bg-brand-primary-dark transition-all flex items-center gap-2">
-                        <span class="material-symbols-outlined text-[18px]">check_circle</span>
-                        Confirm
-                    </button>
+            <!-- Table -->
+            <div id="tableContent" style="display: none;">
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th>Asset Code</th>
+                            <th>Name</th>
+                            <th class="hidden sm:table-cell">Category</th>
+                            <th>Method</th>
+                            <th class="text-right">Depreciation Charge</th>
+                            <th class="text-right">Cost</th>
+                            <th class="text-right">Accum. Dep.</th>
+                            <th class="text-right">Book Value</th>
+                            <th class="text-right">Status</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                        <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Summary Cards below the table -->
+    <div class="summary-grid">
+        <!-- Portfolio Summary Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="font-section-header text-section-header text-on-surface">Portfolio Summary</h3>
+                <span class="material-symbols-outlined">summarize</span>
+            </div>
+            <div class="card-content">
+                <div id="chartLoadingState" class="loading-spinner" style="min-height: 150px;">
+                    <div class="spinner"></div>
+                </div>
+                <div id="chartContent" style="display: none; space-y: 1rem;">
+                    <div style="margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span class="text-body-default text-secondary">Total Assets</span>
+                            <span id="chartTotalAssets" class="font-body-medium text-on-surface">0</span>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span class="text-body-default text-secondary">Fully Depreciated</span>
+                            <span id="chartFullyDepreciated" class="font-body-medium text-on-surface">0</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background: var(--color-bg-canvas); border-radius: 4px; overflow: hidden;">
+                            <div id="chartDeprecationProgress" style="height: 100%; background: var(--color-primary); transition: width 0.3s ease; width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div style="padding-top: 1rem; border-top: 1px solid var(--color-border);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span class="text-body-default text-secondary">Depreciation Rate</span>
+                            <span id="chartDepRate" class="font-body-medium text-on-surface">0%</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background: var(--color-bg-canvas); border-radius: 4px; overflow: hidden;">
+                            <div id="chartDepRateBar" style="height: 100%; background: var(--color-warning); transition: width 0.3s ease; width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Methods Distribution Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="font-section-header text-section-header text-on-surface">Methods Used</h3>
+                <span class="text-badge-label bg-surface-canvas px-2 py-0.5 rounded text-secondary">Distribution</span>
+            </div>
+            <div class="card-content">
+                <div id="methodLoadingState" class="loading-spinner" style="min-height: 150px;">
+                    <div class="spinner"></div>
+                </div>
+                <div id="methodContent" style="display: none;">
+                    <div id="methodsList" style="space-y: 1rem;">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL ── -->
+    <div id="periodActionModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                <span id="periodActionIcon" class="material-symbols-outlined text-primary text-[24px]">verified</span>
+                <h3 id="periodActionTitle" class="font-section-header text-section-header text-on-surface">Approve Depreciation Period</h3>
+                </div>
+                <div class="modal-body">
+                <p id="periodActionText" class="text-body-default text-secondary" style="margin: 0 0 1rem 0;">Confirm this action?</p>
+                <div id="periodActionResult" class="text-body-default text-secondary" style="display: none; background: var(--color-bg-canvas); padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem;"></div>
+                </div>
+            <div class="modal-footer">
+                <button id="cancelPeriodActionBtn" class="btn btn-secondary">Cancel</button>
+                <button id="confirmPeriodActionBtn" class="btn btn-primary">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    <span>Confirm</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── ALERTS ── -->
+    <div id="alertContainer" class="alert-container"></div>
+
+    <!-- ── SCRIPTS (Copy from original) ── -->
     <script>
         document.addEventListener('DOMContentLoaded', async function () {
             await loadDepreciationDashboard();
@@ -555,18 +1131,13 @@
 
                 if (data.lastCalculatedAt) {
                     const timeAgo = getTimeAgoString(parseLocalDateTime(data.lastCalculatedAt));
-                    document.getElementById('lastCalcDisplay').innerHTML = `
-                        <span class="material-symbols-outlined text-[16px]">update</span>
-                        <span>Last calculated: ${timeAgo}</span>
-                    `;
+                    document.getElementById('lastCalcDisplay').textContent = `Last calculated: ${timeAgo}`;
                 }
 
                 await loadKPIs(data.summary);
                 loadChartData(data);
                 window.__dashboardData = data;
 
-                // Load the FULL postings set so the filters/export operate on complete data
-                // (the dashboard's latestPostings is only the most-recent slice).
                 let allPostings = [];
                 try {
                     const postingsResp = await fetch('/api/depreciation/postings');
@@ -588,26 +1159,19 @@
                 }
             } catch (error) {
                 console.error('Error loading depreciation dashboard:', error);
-                document.getElementById('kpiLoadingState').classList.add('hidden');
-                document.getElementById('kpiContent').classList.remove('hidden');
+                document.getElementById('tableLoadingState').style.display = 'none';
                 showTableEmptyState();
-                showChartEmptyState();
             }
         }
 
         async function loadKPIs(summary) {
-            document.getElementById('kpiLoadingState').classList.add('hidden');
-            document.getElementById('kpiContent').classList.remove('hidden');
+            document.getElementById('tableLoadingState').style.display = 'none';
 
             if (!summary || summary.assetCount === 0) {
                 document.getElementById('kpiTotalCost').textContent = '₦0.00';
                 document.getElementById('kpiBookValue').textContent = '₦0.00';
                 document.getElementById('kpiAccumulatedDep').textContent = '₦0.00';
                 document.getElementById('kpiFullyDepreciated').textContent = '0';
-                document.getElementById('kpiRecoveryPotential').textContent = '0% recovery potential';
-                document.getElementById('kpiDepPercentage').innerHTML =
-                    '<span class="material-symbols-outlined text-[16px]">history</span><span>0% of total asset cost</span>';
-                document.getElementById('kpiAssetCount').textContent = 'of 0 assets';
                 return;
             }
 
@@ -624,8 +1188,7 @@
             const depPercent = totalCost > 0 ? (accumulated / totalCost * 100).toFixed(1) : 0;
 
             document.getElementById('kpiRecoveryPotential').textContent = recoveryPercent + '% recovery potential';
-            document.getElementById('kpiDepPercentage').innerHTML =
-                '<span class="material-symbols-outlined text-[16px]">history</span><span>' + depPercent + '% of total asset cost</span>';
+            document.getElementById('kpiDepPercentage').textContent = depPercent + '% of total cost';
             const configuredCount = summary.configuredAssetCount || summary.assetCount;
             document.getElementById('kpiAssetCount').textContent = 'of ' + configuredCount + ' assets configured';
         }
@@ -634,15 +1197,15 @@
             const summary = data.summary;
 
             if (!summary || summary.assetCount === 0) {
-                document.getElementById('chartLoadingState').classList.add('hidden');
-                document.getElementById('methodLoadingState').classList.add('hidden');
+                document.getElementById('chartLoadingState').style.display = 'none';
+                document.getElementById('methodLoadingState').style.display = 'none';
                 return;
             }
 
-            document.getElementById('chartLoadingState').classList.add('hidden');
-            document.getElementById('methodLoadingState').classList.add('hidden');
-            document.getElementById('chartContent').classList.remove('hidden');
-            document.getElementById('methodContent').classList.remove('hidden');
+            document.getElementById('chartLoadingState').style.display = 'none';
+            document.getElementById('methodLoadingState').style.display = 'none';
+            document.getElementById('chartContent').style.display = 'block';
+            document.getElementById('methodContent').style.display = 'block';
 
             document.getElementById('chartTotalAssets').textContent = summary.assetCount;
             document.getElementById('chartFullyDepreciated').textContent = summary.fullyDepreciatedCount;
@@ -664,11 +1227,7 @@
 
         function displayMethodDistribution(postings) {
             if (!postings || postings.length === 0) {
-                document.getElementById('methodsList').innerHTML = `
-                    <div class="text-center py-4">
-                        <p class="text-label-small text-secondary">No depreciation data available yet</p>
-                    </div>
-                `;
+                document.getElementById('methodsList').innerHTML = '<div style="text-align: center; padding: 1rem; color: var(--color-text-secondary);">No depreciation data available yet</div>';
                 return;
             }
 
@@ -678,25 +1237,25 @@
                 methodCounts[method] = (methodCounts[method] || 0) + 1;
             });
 
-            const methodColors = {
-                'STRAIGHT_LINE': { color: '#98001a', label: 'Straight-Line' },
-                'REDUCING_BALANCE': { color: '#A05C00', label: 'Reducing Balance' },
-                'DOUBLE_DECLINING_BALANCE': { color: '#1558A8', label: 'Double Declining' }
+            const methodInfo = {
+                'STRAIGHT_LINE': { color: '#D32F2F', label: 'Straight-Line' },
+                'REDUCING_BALANCE': { color: '#F57C00', label: 'Reducing Balance' },
+                'DOUBLE_DECLINING_BALANCE': { color: '#0277BD', label: 'Double Declining' }
             };
 
             const methodsList = document.getElementById('methodsList');
             let html = '';
             Object.entries(methodCounts).forEach(([method, count]) => {
-                const config = methodColors[method] || { color: '#5d5e65', label: method };
+                const config = methodInfo[method] || { color: '#999999', label: method };
                 const percentage = ((count / postings.length) * 100).toFixed(1);
 
                 html += `
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${config.color}"></div>
+                    <div style="margin-bottom: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                            <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${config.color};"></div>
                             <span class="font-body-medium text-on-surface">${config.label}</span>
                         </div>
-                        <div class="ml-5">
+                        <div style="margin-left: 1.5rem;">
                             <span class="text-label-small text-secondary">${count} Asset${count !== 1 ? 's' : ''} (${percentage}%)</span>
                         </div>
                     </div>
@@ -712,10 +1271,11 @@
                 return;
             }
 
-            document.getElementById('tableLoadingState').classList.add('hidden');
-            document.getElementById('tableEmptyState').classList.add('hidden');
-            document.getElementById('tableContent').classList.remove('hidden');
+            document.getElementById('tableLoadingState').style.display = 'none';
+            document.getElementById('tableEmptyState').style.display = 'none';
+            document.getElementById('tableContent').style.display = 'block';
             document.getElementById('tableShowingText').textContent = `Showing ${postings.length} postings`;
+            document.getElementById('tableShowingText2').textContent = `Showing ${postings.length} postings`;
 
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
@@ -728,27 +1288,26 @@
 
         function createTableRow(posting, index) {
             const row = document.createElement('tr');
-            row.className = 'hover:bg-surface-canvas/50 transition-colors cursor-pointer';
-            if (index === 0) row.classList.add('border-l-4', 'border-primary');
+            if (index === 0) row.classList.add('selected');
 
             const methodBadge = getMethodBadge(posting.depreciationMethod);
             const statusBadge = getStatusBadge(posting.status);
 
             row.innerHTML = `
-                <td class="px-4 sm:px-5 py-3 font-technical-data text-technical-data text-primary whitespace-nowrap">${posting.assetCode}</td>
-                <td class="px-4 sm:px-5 py-3 text-body-default text-on-surface">${posting.assetName}</td>
-                <td class="px-4 sm:px-5 py-3 text-body-default text-secondary whitespace-nowrap">${posting.category}</td>
-                <td class="px-4 sm:px-5 py-3">${methodBadge}</td>
-                <td class="px-4 sm:px-5 py-3 font-technical-data text-primary whitespace-nowrap">${formatCurrency(posting.depreciationCharge)}</td>
-                <td class="px-4 sm:px-5 py-3 font-technical-data text-on-surface whitespace-nowrap">₦${formatNumberOnly(posting.assetCost)}</td>
-                <td class="px-4 sm:px-5 py-3 font-technical-data text-error whitespace-nowrap">₦${formatNumberOnly(posting.closingAccumulatedDepreciation)}</td>
-                <td class="px-4 sm:px-5 py-3 font-technical-data font-bold text-on-surface whitespace-nowrap">₦${formatNumberOnly(posting.bookValue)}</td>
-                <td class="px-4 sm:px-5 py-3 text-right">${statusBadge}</td>
+                <td><span class="accent-text">${posting.assetCode}</span></td>
+                <td>${posting.assetName}</td>
+                <td class="hidden sm:table-cell"><span class="secondary-text">${posting.category}</span></td>
+                <td>${methodBadge}</td>
+                <td style="text-align: right;" class="accent-text">${formatCurrency(posting.depreciationCharge)}</td>
+                <td style="text-align: right;">₦${formatNumberOnly(posting.assetCost)}</td>
+                <td style="text-align: right; color: var(--color-error);">₦${formatNumberOnly(posting.closingAccumulatedDepreciation)}</td>
+                <td style="text-align: right; font-weight: 600;">₦${formatNumberOnly(posting.bookValue)}</td>
+                <td style="text-align: right;">${statusBadge}</td>
             `;
 
             row.addEventListener('click', () => {
-                document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('border-l-4', 'border-primary'));
-                row.classList.add('border-l-4', 'border-primary');
+                document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected'));
+                row.classList.add('selected');
             });
 
             return row;
@@ -756,28 +1315,26 @@
 
         function getMethodBadge(method) {
             const methods = {
-                'STRAIGHT_LINE': { label: 'Straight-Line', color: 'bg-primary/10 text-primary' },
-                'REDUCING_BALANCE': { label: 'Red. Balance', color: 'bg-status-warning/10 text-status-warning' },
-                'DOUBLE_DECLINING_BALANCE': { label: 'DDB', color: 'bg-status-info/10 text-status-info' }
+                'STRAIGHT_LINE': { label: 'Straight-Line', class: 'badge-method' },
+                'REDUCING_BALANCE': { label: 'Red. Balance', class: 'badge-method rb' },
+                'DOUBLE_DECLINING_BALANCE': { label: 'DDB', class: 'badge-method ddb' }
             };
-            const config = methods[method] || { label: method, color: 'bg-surface-canvas text-on-surface' };
-            return `<span class="px-2 py-0.5 rounded-full ${config.color} text-badge-label font-badge-label whitespace-nowrap">${config.label}</span>`;
+            const config = methods[method] || { label: method, class: 'badge-status' };
+            return `<span class="badge ${config.class}">${config.label}</span>`;
         }
 
         function getStatusBadge(status) {
             const statuses = {
-                'DRAFT': { label: 'Draft', color: 'bg-status-warning/10 text-status-warning' },
-                'APPROVED': { label: 'Approved', color: 'bg-status-success/10 text-status-success' },
-                'POSTED': { label: 'Posted', color: 'bg-status-info/10 text-status-info' },
-                'LOCKED': { label: 'Locked', color: 'bg-primary/10 text-primary' },
-                'REVERSED': { label: 'Reversed', color: 'bg-error/10 text-error' }
+                'DRAFT': { label: 'Draft', class: 'badge-status draft' },
+                'APPROVED': { label: 'Approved', class: 'badge-status approved' },
+                'POSTED': { label: 'Posted', class: 'badge-status posted' },
+                'LOCKED': { label: 'Locked', class: 'badge-status' },
+                'REVERSED': { label: 'Reversed', class: 'badge-status' }
             };
-            const config = statuses[status] || { label: status || 'Unknown', color: 'bg-surface-canvas text-secondary' };
-            return `<span class="px-2 py-0.5 rounded-full ${config.color} text-badge-label font-badge-label whitespace-nowrap">${config.label}</span>`;
+            const config = statuses[status] || { label: status || 'Unknown', class: 'badge-status' };
+            return `<span class="badge ${config.class}">${config.label}</span>`;
         }
 
-        // Map a depreciation method enum to its display label (used for filter matching
-        // and export, so we compare on the enum value, not the human label).
         const METHOD_LABELS = {
             'STRAIGHT_LINE': 'Straight-Line (SL)',
             'REDUCING_BALANCE': 'Reducing Balance (RB)',
@@ -857,7 +1414,6 @@
             const reversedCount = statusCounts.REVERSED || 0;
             const totalCount = postings.length;
             const totalCharge = postings.reduce((sum, p) => sum + parseFloat(p.depreciationCharge || 0), 0);
-            const dominantStatus = resolvePeriodStatus(statusCounts, totalCount);
 
             draftCountEl.textContent = draftCount;
             approvedCountEl.textContent = approvedCount;
@@ -867,16 +1423,15 @@
             totalCountEl.textContent = totalCount;
 
             if (!period || totalCount === 0) {
-                statusBadge.className = 'px-2 py-0.5 rounded-full bg-surface-canvas text-secondary text-badge-label whitespace-nowrap';
                 statusBadge.textContent = 'No period selected';
-                summary.textContent = 'Run depreciation to create draft records for review.';
+                statusBadge.className = 'period-badge';
+                summary.textContent = 'Select a depreciation period to review and manage records';
                 updatePeriodActionButtons(statusCounts, totalCount);
                 return;
             }
 
-            const badge = periodStatusBadgeConfig(dominantStatus);
-            statusBadge.className = `px-2 py-0.5 rounded-full ${badge.color} text-badge-label whitespace-nowrap`;
-            statusBadge.textContent = `${period}: ${badge.label}`;
+            statusBadge.textContent = `${period}: Draft records ready`;
+            statusBadge.className = 'period-badge draft';
             summary.textContent = `Review ${totalCount} posting${totalCount !== 1 ? 's' : ''} for ${period}. Total depreciation charge: ${formatCurrency(totalCharge)}.`;
             updatePeriodActionButtons(statusCounts, totalCount);
         }
@@ -899,28 +1454,6 @@
             if (reverseBtn) reverseBtn.disabled = totalCount === 0 || postedCount !== totalCount || lockedCount > 0 || reversedCount > 0;
         }
 
-        function resolvePeriodStatus(statusCounts, totalCount) {
-            if (totalCount === 0) return 'NONE';
-            if ((statusCounts.DRAFT || 0) > 0) return 'DRAFT';
-            if ((statusCounts.APPROVED || 0) === totalCount) return 'APPROVED';
-            if ((statusCounts.POSTED || 0) === totalCount) return 'POSTED';
-            if ((statusCounts.LOCKED || 0) === totalCount) return 'LOCKED';
-            if ((statusCounts.REVERSED || 0) === totalCount) return 'REVERSED';
-            return 'MIXED';
-        }
-
-        function periodStatusBadgeConfig(status) {
-            const statuses = {
-                'DRAFT': { label: 'Draft records ready for approval', color: 'bg-status-warning/10 text-status-warning' },
-                'APPROVED': { label: 'Approved', color: 'bg-status-success/10 text-status-success' },
-                'POSTED': { label: 'Posted', color: 'bg-status-info/10 text-status-info' },
-                'LOCKED': { label: 'Locked', color: 'bg-primary/10 text-primary' },
-                'REVERSED': { label: 'Reversed', color: 'bg-error/10 text-error' },
-                'MIXED': { label: 'Mixed statuses', color: 'bg-status-warning/10 text-status-warning' }
-            };
-            return statuses[status] || { label: 'No period selected', color: 'bg-surface-canvas text-secondary' };
-        }
-
         const PERIOD_ACTIONS = {
             approve: {
                 title: 'Approve Depreciation Period',
@@ -937,7 +1470,7 @@
                 label: 'Post to Ledger',
                 endpoint: 'post',
                 countStatus: 'APPROVED',
-                message: (period, count) => `Post ${count} approved depreciation posting${count !== 1 ? 's' : ''} for ${period} to the general ledger? Journal entries will debit Depreciation Expense and credit Accumulated Depreciation.`,
+                message: (period, count) => `Post ${count} approved depreciation posting${count !== 1 ? 's' : ''} for ${period} to the general ledger?`,
                 success: (result) => `Posted ${result.period} to ledger as ${result.batchNumber}. Debit: ${formatCurrency(result.totalDebit)}, Credit: ${formatCurrency(result.totalCredit)}.`,
                 result: (result) => `Journal Batch: ${result.batchNumber}<br>Total Debit: ${formatCurrency(result.totalDebit)}<br>Total Credit: ${formatCurrency(result.totalCredit)}`
             },
@@ -956,7 +1489,7 @@
                 label: 'Reverse Period',
                 endpoint: 'reverse',
                 countStatus: 'POSTED',
-                message: (period, count) => `Reverse ${count} posted depreciation record${count !== 1 ? 's' : ''} for ${period}? This will mark the accounting journal as reversed and update depreciation records.`,
+                message: (period, count) => `Reverse ${count} posted depreciation record${count !== 1 ? 's' : ''} for ${period}?`,
                 success: (result) => `Reversed ${result.reversedCount} depreciation posting${result.reversedCount !== 1 ? 's' : ''} for ${result.period}.`
             }
         };
@@ -976,18 +1509,17 @@
             document.getElementById('periodActionTitle').textContent = action.title;
             document.getElementById('periodActionText').textContent = action.message(period, actionCount);
             const confirmBtn = document.getElementById('confirmPeriodActionBtn');
-            confirmBtn.classList.remove('hidden');
-            confirmBtn.lastChild.textContent = action.label;
+            confirmBtn.querySelector('span:last-child').textContent = action.label;
             document.getElementById('cancelPeriodActionBtn').textContent = 'Cancel';
             const resultEl = document.getElementById('periodActionResult');
-            resultEl.classList.add('hidden');
+            resultEl.style.display = 'none';
             resultEl.innerHTML = '';
-            document.getElementById('periodActionModal').classList.remove('hidden');
+            document.getElementById('periodActionModal').classList.add('active');
         }
 
         function closePeriodActionModal() {
             window.__periodActionRequest = null;
-            document.getElementById('periodActionModal').classList.add('hidden');
+            document.getElementById('periodActionModal').classList.remove('active');
         }
 
         async function executeSelectedPeriodAction() {
@@ -997,7 +1529,6 @@
             const action = PERIOD_ACTIONS[request.actionName];
             const confirmBtn = document.getElementById('confirmPeriodActionBtn');
             confirmBtn.disabled = true;
-            confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
             try {
                 const response = await fetch(`/api/depreciation/period/${encodeURIComponent(request.period)}/${action.endpoint}`, {
@@ -1011,9 +1542,9 @@
                 const resultEl = document.getElementById('periodActionResult');
                 if (action.result) {
                     resultEl.innerHTML = action.result(result);
-                    resultEl.classList.remove('hidden');
+                    resultEl.style.display = 'block';
                     window.__periodActionRequest = null;
-                    confirmBtn.classList.add('hidden');
+                    confirmBtn.style.display = 'none';
                     document.getElementById('cancelPeriodActionBtn').textContent = 'Close';
                 }
 
@@ -1024,11 +1555,9 @@
                 showAlert(`Error processing period action: ${error.message}`, 'error');
             } finally {
                 confirmBtn.disabled = false;
-                confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         }
 
-        // Populate the Year Range dropdown from the dataset + the real current year.
         function populateYearFilter(postings) {
             const yearSelect = document.getElementById('yearFilter');
             if (!yearSelect) return;
@@ -1043,7 +1572,6 @@
                 }
             });
 
-            // Keep "All Years" (value="") as the first, selected option.
             yearSelect.innerHTML = '<option value="">All Years</option>';
             Array.from(years).sort((a, b) => b - a).forEach(y => {
                 const opt = document.createElement('option');
@@ -1060,17 +1588,8 @@
                 if (el) el.onchange = applyFilters;
             });
 
-            const exportHandlers = ['exportBtn', 'exportBtn2'].map(id => document.getElementById(id));
-            exportHandlers.forEach(btn => {
-                if (btn) btn.onclick = () => exportCsv(getFilteredPostings());
-            });
-
-            const moreBtn = document.getElementById('moreFiltersBtn');
-            if (moreBtn) {
-                moreBtn.onclick = () => {
-                    showAlert('All available filters are shown above (Category, Department, Method, Year Range).', 'info');
-                };
-            }
+            const exportBtn = document.getElementById('exportBtn');
+            if (exportBtn) exportBtn.onclick = () => exportCsv(getFilteredPostings());
 
             const approveBtn = document.getElementById('approvePeriodBtn');
             if (approveBtn) approveBtn.onclick = () => openPeriodActionModal('approve');
@@ -1098,7 +1617,6 @@
             if (confirmPeriodActionBtn) confirmPeriodActionBtn.onclick = executeSelectedPeriodAction;
         }
 
-        // Apply the four filters and re-render the table + sidebar from the result.
         function applyFilters() {
             const selectedPeriod = document.getElementById('periodFilter')?.value || '';
             window.__selectedDepreciationPeriod = selectedPeriod;
@@ -1110,8 +1628,6 @@
             } else {
                 loadTableData(filtered);
             }
-            // Keep the sidebar method distribution in sync with the filtered set
-            // (KPI figures stay portfolio-wide via the stored summary).
             const dash = window.__dashboardData;
             if (dash) loadChartData({ summary: dash.summary, latestPostings: filtered });
         }
@@ -1138,7 +1654,6 @@
             });
         }
 
-        // Build and download a CSV of the given (already filtered) postings.
         function exportCsv(rows) {
             if (!rows || rows.length === 0) {
                 showAlert('No postings to export for the current filter.', 'error');
@@ -1175,7 +1690,6 @@
                 lines.push(row.join(','));
             });
 
-            // Filename uses the app's current local date (mirrors the timezone-aware clock).
             const d = new Date();
             const fileDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
@@ -1187,19 +1701,13 @@
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
+            showAlert('Depreciation data exported successfully', 'success');
         }
 
         function showTableEmptyState() {
-            document.getElementById('tableLoadingState').classList.add('hidden');
-            document.getElementById('tableEmptyState').classList.remove('hidden');
-            document.getElementById('tableContent').classList.add('hidden');
-        }
-
-        function showChartEmptyState() {
-            document.getElementById('chartLoadingState').classList.add('hidden');
-            document.getElementById('methodLoadingState').classList.add('hidden');
-            document.getElementById('chartContent').classList.add('hidden');
-            document.getElementById('methodContent').classList.add('hidden');
+            document.getElementById('tableLoadingState').style.display = 'none';
+            document.getElementById('tableEmptyState').style.display = 'block';
+            document.getElementById('tableContent').style.display = 'none';
         }
 
         function formatCurrency(value) {
@@ -1215,8 +1723,9 @@
                 return;
             }
             const alertEl = document.createElement('div');
-            alertEl.className = `alert alert-${type} flex items-center gap-2`;
-            alertEl.innerHTML = `<span>${message}</span>`;
+            const icons = { success: 'check_circle', error: 'error', info: 'info' };
+            alertEl.className = `alert alert-${type}`;
+            alertEl.innerHTML = `<span class="icon-small material-symbols-outlined">${icons[type]}</span><span>${message}</span>`;
             container.appendChild(alertEl);
             setTimeout(() => alertEl.remove(), 4000);
         }
@@ -1227,8 +1736,6 @@
             return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         }
 
-        // Parse a LocalDateTime ISO string (no zone offset) as the user's local time.
-        // The server stores wall-clock time (Africa/Lagos); we display it as-is.
         function parseLocalDateTime(value) {
             if (!value) return null;
             const parts = value.split(/[-:T]/).map(Number);

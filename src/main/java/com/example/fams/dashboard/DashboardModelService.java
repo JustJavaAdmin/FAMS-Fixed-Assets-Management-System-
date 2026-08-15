@@ -22,6 +22,10 @@ public class DashboardModelService {
     }
 
     public void addDashboardModel(Model model) {
-        model.addAllAttributes(dashboardKpiService.getGlobalDashboard());
+        addDashboardModel(model, null);
+    }
+
+    public void addDashboardModel(Model model, Integer selectedYear) {
+        model.addAllAttributes(dashboardKpiService.getGlobalDashboard(selectedYear));
     }
 }
