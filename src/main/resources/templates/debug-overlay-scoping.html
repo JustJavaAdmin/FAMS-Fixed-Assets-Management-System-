@@ -1,0 +1,157 @@
+<!-- Debug Page - Test Content Loading Overlay Scoping -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Loading Scoping Test - FAMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/loading-system.css">
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400;
+        }
+        /* Verify main-content-area has position relative */
+        .main-content-area {
+            position: relative !important;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden bg-gray-50">
+
+<!-- SIDEBAR (Should NOT be blurred) -->
+<aside class="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
+    <h2 class="text-lg font-bold mb-6">SIDEBAR</h2>
+    <nav class="space-y-2 flex-1">
+        <a href="#" class="block p-3 rounded-lg hover:bg-gray-100 text-gray-700">Dashboard</a>
+        <a href="#" class="block p-3 rounded-lg hover:bg-gray-100 text-gray-700">Assets</a>
+        <a href="#" class="block p-3 rounded-lg hover:bg-gray-100 text-gray-700">Reports</a>
+        <a href="#" class="block p-3 rounded-lg hover:bg-gray-100 text-gray-700">Settings</a>
+    </nav>
+    <div class="text-xs text-gray-500 border-t border-gray-200 pt-4">
+        ✅ This sidebar should stay CLEAR and visible
+    </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="flex-1 flex flex-col overflow-hidden bg-white">
+
+    <!-- HEADER (Should NOT be blurred) -->
+    <header class="h-16 border-b border-gray-200 px-8 flex items-center justify-between bg-white">
+        <h1 class="text-xl font-bold">Header - Should Stay Clear</h1>
+        <button onclick="alert('Header is clickable!')" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            Click Me
+        </button>
+    </header>
+
+    <!-- MAIN CONTENT AREA (This is where the overlay should be applied) -->
+    <div class="flex-1 overflow-y-auto p-8 main-content-area" id="contentContainer">
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
+                <h2 class="text-lg font-bold text-blue-900 mb-2">✅ Main Content Area</h2>
+                <p class="text-blue-800">When loading, ONLY this area should be dimmed with the overlay.</p>
+                <p class="text-blue-700 text-sm mt-2">Sidebar and header should remain clear and interactive.</p>
+            </div>
+
+            <button onclick="startLoading()" class="px-6 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 mb-6">
+                Show Loading (Should NOT blur sidebar/header)
+            </button>
+
+            <div class="space-y-6">
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <h3 class="font-bold mb-3">Content Section 1</h3>
+                    <p class="text-gray-600">This content should be dimmed when loading overlay is active.</p>
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <h3 class="font-bold mb-3">Content Section 2</h3>
+                    <p class="text-gray-600">This content should be dimmed when loading overlay is active.</p>
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <h3 class="font-bold mb-3">Content Section 3</h3>
+                    <p class="text-gray-600">This content should be dimmed when loading overlay is active.</p>
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <h3 class="font-bold mb-3">Content Section 4</h3>
+                    <p class="text-gray-600">This content should be dimmed when loading overlay is active.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+</body>
+
+<script src="/js/loading-system.js"></script>
+<script>
+    function startLoading() {
+        const container = document.getElementById('contentContainer');
+
+        // Show loading
+        Loading.showContentLoading(
+            container,
+            'Testing overlay scoping...',
+            'lg'
+        );
+
+        // Check overlay position
+        console.log('✅ Loading overlay shown');
+        console.log('Container element:', container);
+        console.log('Container computed style:', window.getComputedStyle(container));
+
+        const overlay = container.querySelector('.content-loading-overlay');
+        if (overlay) {
+            console.log('✅ Overlay found inside container');
+            console.log('Overlay computed style:', window.getComputedStyle(overlay));
+        }
+
+        // Hide after 5 seconds
+        setTimeout(() => {
+            Loading.hideContentLoading(container);
+            console.log('✅ Loading overlay hidden');
+        }, 5000);
+
+        // Instructions
+        console.log(`
+╔════════════════════════════════════════════════════════════╗
+║                  OVERLAY SCOPING TEST                     ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  ✅ EXPECTED:                                              ║
+║     • Sidebar is CLEAR and VISIBLE                       ║
+║     • Header is CLEAR and VISIBLE                        ║
+║     • Sidebar is CLICKABLE (try clicking a link)         ║
+║     • Header button is CLICKABLE                         ║
+║     • Only CONTENT AREA is dimmed                        ║
+║     • Spinner visible in center of content area          ║
+║                                                            ║
+║  ❌ PROBLEM (if happening):                                ║
+║     • Entire page blurred (wrong container)             ║
+║     • Sidebar/header are blurred (overlay too large)    ║
+║                                                            ║
+║  Overlay will hide automatically in 5 seconds...         ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
+        `);
+    }
+
+    // Auto-check on load
+    window.addEventListener('load', () => {
+        const container = document.getElementById('contentContainer');
+        const computedStyle = window.getComputedStyle(container);
+        console.log('Container position:', computedStyle.position);
+
+        if (computedStyle.position === 'relative') {
+            console.log('✅ CORRECT: .main-content-area has position: relative');
+        } else {
+            console.warn('❌ ISSUE: .main-content-area does not have position: relative');
+            console.warn('This could cause the overlay to be positioned incorrectly');
+        }
+    });
+</script>
+
+</html>
+

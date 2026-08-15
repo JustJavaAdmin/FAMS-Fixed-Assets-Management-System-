@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Loading Examples - FAMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/loading-system.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 p-8">
+
+<div class="max-w-6xl mx-auto">
+    <h1 class="text-3xl font-bold mb-2">Content Section Loading Examples</h1>
+    <p class="text-gray-600 mb-8">Professional loading states that keep sidebar & header visible</p>
+
+    <!-- Example 1: Basic Content Loading -->
+    <div class="mb-8 bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-xl font-semibold mb-4">Example 1: Basic Content Loading</h2>
+        <p class="text-gray-600 text-sm mb-4">Shows a spinner overlay that dims only the content area</p>
+
+        <div class="mb-4 p-4 border border-gray-200 rounded-lg min-h-32 bg-gray-50 relative" id="example1-container">
+            <div class="text-center text-gray-500">
+                <span class="material-symbols-outlined text-4xl block mb-2">folder_open</span>
+                <p>Content area (sidebar and header remain clear)</p>
+            </div>
+        </div>
+
+        <button onclick="showExample1Loading()" class="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors">
+            Show Loading
+        </button>
+        <button onclick="hideExample1Loading()" class="ml-2 bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-medium hover:bg-gray-400 transition-colors">
+            Hide Loading
+        </button>
+    </div>
+
+    <!-- Example 2: Loading with Message -->
+    <div class="mb-8 bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-xl font-semibold mb-4">Example 2: Loading with Custom Message</h2>
+        <p class="text-gray-600 text-sm mb-4">Shows spinner with contextual message</p>
+
+        <div class="mb-4 p-4 border border-gray-200 rounded-lg min-h-32 bg-gray-50 relative" id="example2-container">
+            <div class="text-center text-gray-500">
+                <span class="material-symbols-outlined text-4xl block mb-2">table_chart</span>
+                <p>Data table content area</p>
+            </div>
+        </div>
+
+        <button onclick="showExample2Loading()" class="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors">
+            Fetch Asset Data
+        </button>
+    </div>
+
+    <!-- Example 3: Loading with Skeleton -->
+    <div class="mb-8 bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-xl font-semibold mb-4">Example 3: Skeleton Loaders</h2>
+        <p class="text-gray-600 text-sm mb-4">Shows placeholder skeletons while loading</p>
+
+        <div class="mb-4">
+            <label class="text-sm font-medium text-gray-700 mr-4">Skeleton Type:</label>
+            <select id="skeletonType" class="px-3 py-2 border border-gray-300 rounded-lg">
+                <option value="table">Table</option>
+                <option value="metric-grid">Metric Grid</option>
+                <option value="chart-card">Chart Card</option>
+                <option value="list">List</option>
+                <option value="form">Form</option>
+            </select>
+        </div>
+
+        <div class="mb-4 p-4 border border-gray-200 rounded-lg min-h-48 bg-gray-50" id="example3-container">
+            <div class="text-center text-gray-500">
+                <span class="material-symbols-outlined text-4xl block mb-2">hourglass_empty</span>
+                <p>Content will show skeleton while loading</p>
+            </div>
+        </div>
+
+        <button onclick="showExample3Loading()" class="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors">
+            Show Skeleton
+        </button>
+        <button onclick="hideExample3Loading()" class="ml-2 bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-medium hover:bg-gray-400 transition-colors">
+            Hide Skeleton
+        </button>
+    </div>
+
+    <!-- Example 4: Real-world Dashboard Refresh -->
+    <div class="mb-8 bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-xl font-semibold mb-4">Example 4: Dashboard Metrics Refresh</h2>
+        <p class="text-gray-600 text-sm mb-4">Simulates refreshing dashboard data with loading state</p>
+
+        <div class="mb-4 p-4 border border-gray-200 rounded-lg min-h-32 bg-gray-50 relative" id="example4-container">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded-lg border border-gray-200">
+                    <p class="text-gray-600 text-sm">Total Assets</p>
+                    <p class="text-2xl font-bold" id="metric1">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg border border-gray-200">
+                    <p class="text-gray-600 text-sm">Asset Value</p>
+                    <p class="text-2xl font-bold" id="metric2">NGN 0</p>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="refreshDashboardMetrics()" class="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors">
+            Refresh Metrics
+        </button>
+    </div>
+
+    <!-- Example 5: Table Data Loading -->
+    <div class="mb-8 bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-xl font-semibold mb-4">Example 5: Table Data Loading</h2>
+        <p class="text-gray-600 text-sm mb-4">Loads table data with skeleton placeholders</p>
+
+        <div class="mb-4 p-4 border border-gray-200 rounded-lg min-h-64 bg-gray-50" id="example5-container">
+            <div class="text-center text-gray-500 py-16">
+                <span class="material-symbols-outlined text-4xl block mb-2">table_rows</span>
+                <p>Table content area</p>
+            </div>
+        </div>
+
+        <button onclick="loadTableData()" class="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors">
+            Load Asset Table
+        </button>
+    </div>
+
+    <!-- Code Examples Section -->
+    <div class="mb-8 bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-xl font-semibold mb-4">💻 Code Examples</h2>
+
+        <div class="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-auto mb-4">
+            <pre class="whitespace-pre-wrap">// Show simple content loading
+const container = document.querySelector('.main-content-area');
+Loading.showContentLoading(container, 'Loading data...', 'lg');
+
+// Do async work
+const data = await fetchData();
+
+// Hide loading
+Loading.hideContentLoading(container);</pre>
+        </div>
+
+        <div class="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-auto mb-4">
+            <pre class="whitespace-pre-wrap">// Show skeleton loaders
+const container = document.querySelector('.main-content-area');
+Loading.showSkeleton(container, 'table');
+
+// Load data
+const assets = await fetchAssets();
+renderTable(assets);
+
+// Hide skeleton to reveal content
+Loading.hideSkeleton(container);</pre>
+        </div>
+
+        <div class="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-auto">
+            <pre class="whitespace-pre-wrap">// Advanced: Spinner + Skeleton
+try {
+  const container = document.querySelector('.main-content-area');
+  Loading.showContentLoading(container, 'Fetching records...', 'lg');
+
+  const data = await fetch('/api/assets').then(r => r.json());
+
+  Loading.hideContentLoading(container);
+  renderContent(data);
+} catch (error) {
+  Loading.hideContentLoading(container);
+  showErrorMessage('Failed to load data');
+}</pre>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-xl font-semibold mb-4">✨ Key Features</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex gap-3">
+                <span class="material-symbols-outlined text-red-600 flex-shrink-0">check_circle</span>
+                <div>
+                    <p class="font-medium">Content-Focused Loading</p>
+                    <p class="text-sm text-gray-600">Only content area is dimmed, sidebar & header stay visible</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <span class="material-symbols-outlined text-red-600 flex-shrink-0">check_circle</span>
+                <div>
+                    <p class="font-medium">Professional Animations</p>
+                    <p class="text-sm text-gray-600">Smooth fade, blur, and slide animations</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <span class="material-symbols-outlined text-red-600 flex-shrink-0">check_circle</span>
+                <div>
+                    <p class="font-medium">Skeleton Placeholders</p>
+                    <p class="text-sm text-gray-600">Multiple skeleton types for different content</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <span class="material-symbols-outlined text-red-600 flex-shrink-0">check_circle</span>
+                <div>
+                    <p class="font-medium">Accessibility</p>
+                    <p class="text-sm text-gray-600">Proper ARIA labels and keyboard support</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <span class="material-symbols-outlined text-red-600 flex-shrink-0">check_circle</span>
+                <div>
+                    <p class="font-medium">Responsive Design</p>
+                    <p class="text-sm text-gray-600">Works on desktop, tablet, and mobile</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <span class="material-symbols-outlined text-red-600 flex-shrink-0">check_circle</span>
+                <div>
+                    <p class="font-medium">Easy Integration</p>
+                    <p class="text-sm text-gray-600">Simple API, works with any container element</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/loading-system.js"></script>
+<script>
+    // Example 1: Basic Loading
+    function showExample1Loading() {
+        const container = document.getElementById('example1-container');
+        Loading.showContentLoading(container, 'Loading data...', 'lg');
+    }
+
+    function hideExample1Loading() {
+        const container = document.getElementById('example1-container');
+        Loading.hideContentLoading(container);
+    }
+
+    // Example 2: Loading with Message
+    function showExample2Loading() {
+        const container = document.getElementById('example2-container');
+        Loading.showContentLoading(container, 'Fetching asset records...', 'lg');
+
+        // Simulate fetching data
+        setTimeout(() => {
+            Loading.hideContentLoading(container);
+            container.innerHTML = '<div class="text-center text-green-600"><span class="material-symbols-outlined text-4xl block mb-2">check_circle</span><p>Assets loaded successfully!</p></div>';
+            setTimeout(() => {
+                container.innerHTML = '<div class="text-center text-gray-500"><span class="material-symbols-outlined text-4xl block mb-2">table_chart</span><p>Data table content area</p></div>';
+            }, 2000);
+        }, 2000);
+    }
+
+    // Example 3: Skeleton Loaders
+    function showExample3Loading() {
+        const container = document.getElementById('example3-container');
+        const skeletonType = document.getElementById('skeletonType').value;
+        Loading.showSkeleton(container, skeletonType);
+    }
+
+    function hideExample3Loading() {
+        const container = document.getElementById('example3-container');
+        Loading.hideSkeleton(container);
+    }
+
+    // Example 4: Dashboard Refresh
+    async function refreshDashboardMetrics() {
+        const container = document.getElementById('example4-container');
+
+        try {
+            Loading.showContentLoading(container, 'Refreshing metrics...', 'lg');
+
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            Loading.hideContentLoading(container);
+
+            // Update metrics
+            document.getElementById('metric1').textContent = '1,247';
+            document.getElementById('metric2').textContent = 'NGN 45,892,500';
+
+        } catch (error) {
+            Loading.hideContentLoading(container);
+            alert('Error refreshing metrics');
+        }
+    }
+
+    // Example 5: Table Data Loading
+    async function loadTableData() {
+        const container = document.getElementById('example5-container');
+
+        try {
+            Loading.showContentLoading(container, 'Loading asset data...', 'lg');
+
+            // Simulate fetching data
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            Loading.hideContentLoading(container);
+            Loading.showSkeleton(container, 'table');
+
+            // Simulate more data fetching
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Render actual table
+            Loading.hideSkeleton(container);
+            container.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-100 border-b">
+                            <tr>
+                                <th class="px-4 py-3 text-left">Asset Tag</th>
+                                <th class="px-4 py-3 text-left">Description</th>
+                                <th class="px-4 py-3 text-left">Status</th>
+                                <th class="px-4 py-3 text-left">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            <tr>
+                                <td class="px-4 py-3">AST-001</td>
+                                <td class="px-4 py-3">Dell Laptop</td>
+                                <td class="px-4 py-3"><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Active</span></td>
+                                <td class="px-4 py-3">NGN 850,000</td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-3">AST-002</td>
+                                <td class="px-4 py-3">HP Monitor</td>
+                                <td class="px-4 py-3"><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Active</span></td>
+                                <td class="px-4 py-3">NGN 120,000</td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-3">AST-003</td>
+                                <td class="px-4 py-3">Office Chair</td>
+                                <td class="px-4 py-3"><span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Depreciated</span></td>
+                                <td class="px-4 py-3">NGN 45,000</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+        } catch (error) {
+            Loading.hideContentLoading(container);
+            alert('Error loading data');
+        }
+    }
+</script>
+
+</body>
+</html>
+
