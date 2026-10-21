@@ -350,30 +350,137 @@ public class AssetController {
     @PostMapping("/assets/bulk-upload")
     public String bulkUpload(@RequestParam("file") MultipartFile file,
                              RedirectAttributes redirectAttributes) {
-        if (file == null || file.isEmpty()) {
+
+        // ─────────────────────────────────────────────────────────────
+        // STAGE 1: Endpoint entered
+        // ─────────────────────────────────────────────────────────────
+        System.out.println("[BULK-UPLOAD] Stage 1: Endpoint hit.");
+
+        // ─────────────────────────────────────────────────────────────
+        // STAGE 2: Null check
+        // ─────────────────────────────────────────────────────────────
+        if (file == null) {
+            System.out.println("[BULK-UPLOAD] Stage 2: FAILED — 'file' is NULL (no multipart attached).");
             redirectAttributes.addFlashAttribute("errorMessage", "Please select a CSV file to upload.");
-            return "redirect:/assets/register";
+            return "redirect:/assets";
+        }
+        System.out.println("[BULK-UPLOAD] Stage 2: file object is not null.");
+
+        // ─────────────────────────────────────────────────────────────
+        // STAGE 3: Empty check
+        // ─────────────────────────────────────────────────────────────
+        if (file.isEmpty()) {
+            System.out.println("[BULK-UPLOAD] Stage 3: FAILED — file is EMPTY. "
+                    + "originalFilename='" + file.getOriginalFilename() + "' "
+                    + "size=" + file.getSize());
+            redirectAttributes.addFlashAttribute("errorMessage", "Please select a CSV file to upload.");
+            return "redirect:/assets";
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // STAGE 4: Dump file metadata
+        // ─────────────────────────────────────────────────────────────
+        System.out.println("[BULK-UPLOAD] Stage 4: File received.");
+        System.out.println("[BULK-UPLOAD]         name='" + file.getOriginalFilename() + "'");
+        System.out.println("[BULK-UPLOAD]         size=" + file.getSize() + " bytes");
+        System.out.println("[BULK-UPLOAD]         contentType='" + file.getContentType() + "'");
+
+        // Quick filename sanity check (helps catch missing extension)
+        String originalName = file.getOriginalFilename();
+        if (originalName == null || !originalName.toLowerCase().endsWith(".csv")) {
+            System.out.println("[BULK-UPLOAD] Stage 4: WARNING — filename does not end with .csv. "
+                    + "Value='" + originalName + "'");
         }
 
         try {
+            // ─────────────────────────────────────────────────────────
+            // STAGE 5: About to call assetService.createFromCsv
+            // ─────────────────────────────────────────────────────────
+            System.out.println("[BULK-UPLOAD] Stage 5: Calling assetService.createFromCsv(...)");
+
             BulkUploadResult result = assetService.createFromCsv(file);
 
-            if (result.getSuccessCount() > 0) {
-                redirectAttributes.addFlashAttribute("successMessage", String.format("Successfully registered %d assets.", result.getSuccessCount()));
+            // ─────────────────────────────────────────────────────────
+            // STAGE 6: Service call returned
+            // ─────────────────────────────────────────────────────────
+            if (result == null) {
+                System.out.println("[BULK-UPLOAD] Stage 6: FAILED — createFromCsv returned NULL. "
+                        + "Check AssetService implementation.");
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        "Bulk upload failed: the importer returned no result.");
+                return "redirect:/assets";
+            }
+
+            int successCount = result.getSuccessCount();
+            int errorCount = result.getErrors() == null ? 0 : result.getErrors().size();
+
+            System.out.println("[BULK-UPLOAD] Stage 6: Service returned result.");
+            System.out.println("[BULK-UPLOAD]         successCount=" + successCount);
+            System.out.println("[BULK-UPLOAD]         errorCount=" + errorCount);
+            if (errorCount > 0) {
+                System.out.println("[BULK-UPLOAD]         firstErrors=" + result.getErrors());
+            }
+
+            // ─────────────────────────────────────────────────────────
+            // STAGE 7: Success path
+            // ─────────────────────────────────────────────────────────
+            if (successCount > 0) {
+                System.out.println("[BULK-UPLOAD] Stage 7: Success path — "
+                        + successCount + " asset(s) registered.");
+
+                redirectAttributes.addFlashAttribute("successMessage",
+                        String.format("Successfully registered %d assets.", successCount));
+
                 if (!result.getErrors().isEmpty()) {
-                    String summary = String.format("%d rows failed. First errors: %s", result.getErrors().size(), String.join("; ", result.getErrors().subList(0, Math.min(5, result.getErrors().size()))));
+                    String summary = String.format(
+                            "%d rows failed. First errors: %s",
+                            result.getErrors().size(),
+                            String.join("; ", result.getErrors().subList(
+                                    0, Math.min(5, result.getErrors().size()))));
+                    System.out.println("[BULK-UPLOAD] Stage 7: Partial failure — " + summary);
                     redirectAttributes.addFlashAttribute("errorMessage", summary);
                 }
+
+                System.out.println("[BULK-UPLOAD] Stage 7: Redirecting to /assets");
                 return "redirect:/assets";
-            } else {
-                String full = String.join("\n", result.getErrors());
-                redirectAttributes.addFlashAttribute("errorMessage", full.isEmpty() ? "No assets were created." : full);
-                return "redirect:/assets/register";
             }
+
+            // ─────────────────────────────────────────────────────────
+            // STAGE 8: Zero successes → all failed
+            // ─────────────────────────────────────────────────────────
+            System.out.println("[BULK-UPLOAD] Stage 8: Zero successes — every row failed.");
+
+            String full = result.getErrors() == null ? "" : String.join("\n", result.getErrors());
+            if (full.isEmpty()) {
+                System.out.println("[BULK-UPLOAD] Stage 8: Service reported zero successes "
+                        + "but returned no error messages. Check service logic.");
+            } else {
+                System.out.println("[BULK-UPLOAD] Stage 8: Full error dump:\n" + full);
+            }
+
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    full.isEmpty() ? "No assets were created." : full);
+            return "redirect:/assets";
+
         } catch (Exception e) {
-            String msg = e.getMessage() == null ? "Unexpected error during bulk upload." : e.getMessage();
+            // ─────────────────────────────────────────────────────────
+            // STAGE 9: Exception — this is your most important log
+            // ─────────────────────────────────────────────────────────
+            System.out.println("[BULK-UPLOAD] Stage 9: EXCEPTION THROWN during import.");
+            System.out.println("[BULK-UPLOAD]         exceptionClass=" + e.getClass().getName());
+            System.out.println("[BULK-UPLOAD]         message=" + e.getMessage());
+
+            // ⭐ Print full stack trace so you can see exactly where it blew up
+            e.printStackTrace();
+
+            String msg = e.getMessage() == null
+                    ? "Unexpected error during bulk upload."
+                    : e.getMessage();
+
             redirectAttributes.addFlashAttribute("errorMessage", "Bulk upload failed: " + msg);
-            return "redirect:/assets/register";
+
+            System.out.println("[BULK-UPLOAD] Stage 9: Redirecting to /assets with error flash.");
+            return "redirect:/assets";
         }
     }
 
